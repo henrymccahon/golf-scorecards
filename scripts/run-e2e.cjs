@@ -10,17 +10,30 @@ const env = {
 
 const server = spawn(
   process.execPath,
-  [path.join(root, 'node_modules', 'vite', 'bin', 'vite.js'), '--host', '127.0.0.1', '--port', '5173'],
+  [path.join(root, 'node_modules', 'vite', 'bin', 'vite.js'), '--host', '127.0.0.1', '--port', '5173', '--strictPort'],
   { cwd: root, env, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true }
 );
 
 let serverOutput = '';
 let serverExitCode = null;
+let serverReportedReady = false;
+function stripAnsi(text) {
+  return text.replace(/\u001b\[[0-9;]*m/g, '');
+}
+
+function captureServerOutput(chunk) {
+  const text = chunk.toString();
+  serverOutput += text;
+  if (stripAnsi(text).includes('http://127.0.0.1:5173/')) {
+    serverReportedReady = true;
+  }
+}
+
 server.stdout.on('data', (chunk) => {
-  serverOutput += chunk.toString();
+  captureServerOutput(chunk);
 });
 server.stderr.on('data', (chunk) => {
-  serverOutput += chunk.toString();
+  captureServerOutput(chunk);
 });
 server.on('exit', (code) => {
   serverExitCode = code ?? 1;
@@ -33,12 +46,15 @@ async function waitForServer(url, timeoutMs) {
       throw new Error(`Vite dev server exited before E2E could start (code ${serverExitCode}).\n${serverOutput}`);
     }
 
-    try {
-      const response = await fetch(url);
-      if (response.ok) return;
-    } catch {
-      // Vite is still starting.
+    if (serverReportedReady) {
+      try {
+        const response = await fetch(url);
+        if (response.ok) return;
+      } catch {
+        // Vite reported readiness, but the socket is not accepting yet.
+      }
     }
+
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   throw new Error(`Timed out waiting for ${url}\n${serverOutput}`);

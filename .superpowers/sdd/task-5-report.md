@@ -21,6 +21,15 @@
 - `npm test -- --run`: PASS, 4 test files passed, 17 tests passed.
 - `npm run build`: PASS.
 - `npm run e2e`: PASS, 1 Playwright test passed.
+
+## Second review findings fix
+
+- Added Vite `--strictPort` to the custom E2E runner.
+- Changed E2E readiness to wait for the spawned Vite process to report `http://127.0.0.1:5173/`, after stripping ANSI color codes, before polling the app URL.
+- Verified an intermediate readiness issue failed fast when the ready output was not detected.
+- `npm run e2e`: PASS, 1 Playwright test passed.
+- `npm test -- --run`: PASS, 4 test files passed, 17 tests passed.
+- `npm run build`: PASS.
 - Mobile 320px layout check: PASS. Confirmed no horizontal overflow, visible search input, bottom navigation fits on the Play screen, active score rows and numeric inputs are readable, Finish round is reachable, and active scoring no longer has bottom-nav overlap.
 
 ## Files Changed

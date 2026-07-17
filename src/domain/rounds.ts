@@ -1,0 +1,92 @@
+import type { Course, Round } from './types';
+
+export interface RoundTotals {
+  completedHoles: number;
+  totalStrokes: number;
+  playedPar: number;
+  scoreToPar: number;
+  totalPar: number;
+  frontNineStrokes: number;
+  frontNinePar: number;
+  backNineStrokes: number;
+  backNinePar: number;
+}
+
+export function createRoundFromCourse(
+  course: Course,
+  options: { id: string; startedAt: string; player?: string }
+): Round {
+  return {
+    id: options.id,
+    status: 'in_progress',
+    courseId: course.id,
+    courseSnapshot: {
+      id: course.id,
+      name: course.name,
+      source: course.source,
+      holeCount: course.holeCount,
+      holes: course.holes.map((hole) => ({ ...hole }))
+    },
+    startedAt: options.startedAt,
+    player: options.player ?? 'Player',
+    scores: course.holes.map((hole) => ({ holeNumber: hole.number }))
+  };
+}
+
+export function setHoleStrokes(round: Round, holeNumber: number, strokes: number | undefined): Round {
+  if (!round.scores.some((score) => score.holeNumber === holeNumber)) {
+    throw new Error(`Hole ${holeNumber} does not exist in this round.`);
+  }
+
+  if (strokes !== undefined && (!Number.isInteger(strokes) || strokes <= 0)) {
+    throw new Error('Strokes must be a positive integer.');
+  }
+
+  return {
+    ...round,
+    scores: round.scores.map((score) =>
+      score.holeNumber === holeNumber ? { ...score, strokes } : score
+    )
+  };
+}
+
+export function getRoundTotals(round: Round): RoundTotals {
+  const completedScores = round.scores.filter((score) => Number.isInteger(score.strokes) && score.strokes! > 0);
+  const holeByNumber = new Map(round.courseSnapshot.holes.map((hole) => [hole.number, hole]));
+
+  const totalPar = round.courseSnapshot.holes.reduce((sum, hole) => sum + hole.par, 0);
+  const totalStrokes = completedScores.reduce((sum, score) => sum + score.strokes!, 0);
+  const playedPar = completedScores.reduce((sum, score) => sum + (holeByNumber.get(score.holeNumber)?.par ?? 0), 0);
+
+  const frontScores = completedScores.filter((score) => score.holeNumber <= 9);
+  const backScores = completedScores.filter((score) => score.holeNumber > 9);
+
+  return {
+    completedHoles: completedScores.length,
+    totalStrokes,
+    playedPar,
+    scoreToPar: totalStrokes - playedPar,
+    totalPar,
+    frontNineStrokes: frontScores.reduce((sum, score) => sum + score.strokes!, 0),
+    frontNinePar: frontScores.reduce((sum, score) => sum + (holeByNumber.get(score.holeNumber)?.par ?? 0), 0),
+    backNineStrokes: backScores.reduce((sum, score) => sum + score.strokes!, 0),
+    backNinePar: backScores.reduce((sum, score) => sum + (holeByNumber.get(score.holeNumber)?.par ?? 0), 0)
+  };
+}
+
+export function canCompleteRound(round: Round): boolean {
+  return round.scores.length === round.courseSnapshot.holeCount &&
+    round.scores.every((score) => Number.isInteger(score.strokes) && score.strokes! > 0);
+}
+
+export function completeRound(round: Round, completedAt: string): Round {
+  if (!canCompleteRound(round)) {
+    throw new Error('Every hole needs a valid stroke value before the round can be completed.');
+  }
+
+  return {
+    ...round,
+    status: 'completed',
+    completedAt
+  };
+}

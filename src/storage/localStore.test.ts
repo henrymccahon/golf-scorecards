@@ -100,4 +100,17 @@ describe('local scorecard store', () => {
       recoveryRequired: false
     });
   });
+
+  it('replaces the recovery backup for a later corruption incident', () => {
+    const storage = new MemoryStorage();
+    const store = createLocalScorecardStore(storage, 'test-key');
+
+    storage.setItem('test-key', '{first-corruption');
+    store.load();
+    store.reset();
+    storage.setItem('test-key', '{second-corruption');
+    store.load();
+
+    expect(storage.getItem('test-key-recovery')).toBe('{second-corruption');
+  });
 });

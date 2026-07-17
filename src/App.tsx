@@ -36,7 +36,8 @@ export function App() {
   const courses = [...seedCourses, ...customCourses];
   const selectedCourse = courses.find((course) => course.id === selectedCourseId);
   const editingCourse = customCourses.find((course) => course.id === editingCourseId);
-  const inProgressRound = rounds.find((round) => round.status === 'in_progress');
+  const inProgressRounds = rounds.filter((round) => round.status === 'in_progress');
+  const inProgressRound = inProgressRounds[0];
   const activeRound = rounds.find((round) => round.id === activeRoundId);
   const summaryRound = rounds.find((round) => round.id === summaryRoundId);
 
@@ -189,12 +190,12 @@ export function App() {
       {storageError ? <p className="error-list" role="alert">{storageError}</p> : null}
       {activeRound ? <ActiveRound round={activeRound} onBack={() => showCourseList('play')} onChangeStrokes={(holeNumber, strokes) => changeRoundStrokes(activeRound.id, holeNumber, strokes)} onFinishRound={() => finishRound(activeRound.id)} /> : null}
       {!activeRound && summaryRound ? <RoundSummary round={summaryRound} onBack={() => showCourseList(activeTab)} /> : null}
-      {!activeRound && !summaryRound && editingCourseId ? <CourseForm course={editingCourse} hasPriorRounds={rounds.some((round) => round.courseId === editingCourse?.id || round.courseSnapshot.id === editingCourse?.id)} onSave={saveCustomCourse} onCancel={() => showCourseList('courses')} /> : null}
+      {!activeRound && !summaryRound && editingCourseId ? <CourseForm course={editingCourse} hasPriorRounds={editingCourse !== undefined && rounds.some((round) => round.courseId === editingCourse.id || round.courseSnapshot.id === editingCourse.id)} onSave={saveCustomCourse} onCancel={() => showCourseList('courses')} /> : null}
       {!activeRound && !summaryRound && !editingCourseId && selectedCourse ? <CourseDetail course={selectedCourse} onBack={() => setSelectedCourseId(undefined)} onStartRound={startRound} onEditCourse={editCourse} /> : null}
       {!activeRound && !summaryRound && !editingCourseId && !selectedCourse && activeTab !== 'history' ? (
         <>
           {activeTab === 'courses' ? <button className="primary-button" onClick={createCourse}>Create course</button> : null}
-          <CourseList courses={courses} query={query} inProgressRound={inProgressRound} onQueryChange={setQuery} onSelectCourse={selectCourse} onResumeRound={resumeRound} />
+          <CourseList courses={courses} query={query} inProgressRounds={inProgressRounds} onQueryChange={setQuery} onSelectCourse={selectCourse} onResumeRound={resumeRound} />
         </>
       ) : null}
       {!activeRound && !summaryRound && !editingCourseId && !selectedCourse && activeTab === 'history' ? <RoundHistory rounds={rounds} onOpenRound={openCompletedRound} /> : null}

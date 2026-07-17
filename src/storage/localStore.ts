@@ -118,6 +118,7 @@ export function createLocalScorecardStore(
     },
     reset() {
       storage.removeItem(key);
+      storage.removeItem(`${key}-recovery`);
       recoveryRequired = false;
     }
   };

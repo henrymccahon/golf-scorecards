@@ -2,6 +2,8 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { App } from './App';
+import { seedCourses } from './data/seedCourses';
+import { createRoundFromCourse } from './domain/rounds';
 import { renderApp, renderAppWithExistingStorage } from './test/render';
 
 describe('App course flows', () => {
@@ -141,5 +143,32 @@ describe('App course flows', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Edit course' }));
 
     expect(screen.getByText(/Historical scorecards keep their original hole data/)).toBeInTheDocument();
+  });
+
+  it('exposes every persisted in-progress round for resuming', async () => {
+    const firstRound = createRoundFromCourse(seedCourses[0], { id: 'round-1', startedAt: '2026-07-17T01:00:00.000Z' });
+    const secondRound = createRoundFromCourse(seedCourses[1], { id: 'round-2', startedAt: '2026-07-17T02:00:00.000Z' });
+    localStorage.setItem('golf-scorecard-v1', JSON.stringify({ customCourses: [], rounds: [firstRound, secondRound] }));
+
+    renderAppWithExistingStorage(<App />);
+
+    expect(screen.getByRole('button', { name: 'Resume Lakeview Nine' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Resume Parklands Championship' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Resume Parklands Championship' }));
+
+    expect(screen.getByRole('heading', { name: 'Parklands Championship' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Hole 18 strokes')).toBeInTheDocument();
+  });
+
+  it('does not warn when creating a course after loading a round without courseId', async () => {
+    const roundWithoutCourseId = createRoundFromCourse(seedCourses[0], { id: 'round-1', startedAt: '2026-07-17T01:00:00.000Z' });
+    delete roundWithoutCourseId.courseId;
+    localStorage.setItem('golf-scorecard-v1', JSON.stringify({ customCourses: [], rounds: [roundWithoutCourseId] }));
+
+    renderAppWithExistingStorage(<App />);
+    await userEvent.click(screen.getByRole('button', { name: 'Courses' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create course' }));
+
+    expect(screen.queryByText(/Historical scorecards keep their original hole data/)).not.toBeInTheDocument();
   });
 });

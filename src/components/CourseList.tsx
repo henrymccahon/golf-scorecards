@@ -4,7 +4,7 @@ import type { Course, Round } from '../domain/types';
 interface CourseListProps {
   courses: Course[];
   query: string;
-  inProgressRound?: Round;
+  inProgressRounds: Round[];
   onQueryChange(query: string): void;
   onSelectCourse(courseId: string): void;
   onResumeRound(roundId: string): void;
@@ -13,7 +13,7 @@ interface CourseListProps {
 export function CourseList({
   courses,
   query,
-  inProgressRound,
+  inProgressRounds,
   onQueryChange,
   onSelectCourse,
   onResumeRound
@@ -24,11 +24,11 @@ export function CourseList({
 
   return (
     <section className="screen">
-      {inProgressRound ? (
-        <button className="resume-banner" onClick={() => onResumeRound(inProgressRound.id)}>
-          Resume {inProgressRound.courseSnapshot.name}
+      {inProgressRounds.map((round) => (
+        <button key={round.id} className="resume-banner" onClick={() => onResumeRound(round.id)}>
+          Resume {round.courseSnapshot.name}
         </button>
-      ) : null}
+      ))}
       <label className="field">
         <span>Search courses</span>
         <input

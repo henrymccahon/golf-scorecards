@@ -15,6 +15,7 @@ export function RoundSummary({ round, onBack }: RoundSummaryProps) {
       <header className="screen-header">
         <h1>{round.courseSnapshot.name}</h1>
         <p>Total {totals.totalStrokes} · {formatScoreToPar(totals.scoreToPar)}</p>
+        <p>Played {new Date(round.completedAt ?? round.startedAt).toLocaleDateString()}</p>
       </header>
       <div className="summary-strip">
         <span>Total {totals.totalStrokes}</span>

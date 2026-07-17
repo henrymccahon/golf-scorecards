@@ -171,6 +171,15 @@ p {
   margin: 0;
 }
 
+.recovery-panel,
+.course-edit-warning {
+  border: 1px solid #9d2f26;
+  border-radius: 8px;
+  background: #fff4f1;
+  color: #741f18;
+  padding: 14px;
+}
+
 .score-entry-list {
   display: grid;
   gap: 10px;

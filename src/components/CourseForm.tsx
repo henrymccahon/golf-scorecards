@@ -4,6 +4,7 @@ import type { Course, Hole, HoleCount } from '../domain/types';
 
 interface CourseFormProps {
   course?: Course;
+  hasPriorRounds?: boolean;
   onSave(course: Course): void;
   onCancel(): void;
 }
@@ -19,7 +20,7 @@ function optionalNumber(value: string): number | undefined {
   return value === '' ? undefined : Number(value);
 }
 
-export function CourseForm({ course, onSave, onCancel }: CourseFormProps) {
+export function CourseForm({ course, hasPriorRounds = false, onSave, onCancel }: CourseFormProps) {
   const [name, setName] = useState(course?.name ?? '');
   const [holeCount, setHoleCount] = useState<HoleCount>(course?.holeCount ?? 9);
   const [holes, setHoles] = useState<Hole[]>(() => makeHoles(course?.holeCount ?? 9, course?.holes));
@@ -62,6 +63,7 @@ export function CourseForm({ course, onSave, onCancel }: CourseFormProps) {
       <header className="screen-header">
         <h1>{course ? 'Edit course' : 'Create course'}</h1>
       </header>
+      {hasPriorRounds ? <p className="course-edit-warning">Historical scorecards keep their original hole data when this course is changed.</p> : null}
       <form className="form-grid" onSubmit={handleSubmit}>
         <label className="field">Course name<input aria-label="Course name" value={name} onChange={(event) => setName(event.target.value)} /></label>
         <label className="field">

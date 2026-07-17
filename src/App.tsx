@@ -14,17 +14,19 @@ import { createLocalScorecardStore } from './storage/localStore';
 const storageErrorMessage = 'Scores cannot be saved on this device right now.';
 
 export function App() {
-  const store = createLocalScorecardStore(window.localStorage);
+  const [store] = useState(() => createLocalScorecardStore(window.localStorage));
   const [initialState] = useState(() => {
     try {
-      return { data: store.load(), storageError: '' };
+      const loaded = store.load();
+      return { ...loaded, storageError: '' };
     } catch {
-      return { data: { customCourses: [], rounds: [] }, storageError: storageErrorMessage };
+      return { data: { customCourses: [], rounds: [] }, recoveryRequired: false, storageError: storageErrorMessage };
     }
   });
   const [customCourses, setCustomCourses] = useState(initialState.data.customCourses);
   const [rounds, setRounds] = useState<Round[]>(initialState.data.rounds);
   const [storageError, setStorageError] = useState(initialState.storageError);
+  const [recoveryRequired, setRecoveryRequired] = useState(initialState.recoveryRequired);
   const [activeTab, setActiveTab] = useState<AppTab>('play');
   const [query, setQuery] = useState('');
   const [selectedCourseId, setSelectedCourseId] = useState<string>();
@@ -39,6 +41,7 @@ export function App() {
   const summaryRound = rounds.find((round) => round.id === summaryRoundId);
 
   function persist(nextCourses: Course[], nextRounds: Round[]): void {
+    if (recoveryRequired) return;
     try {
       store.save({ customCourses: nextCourses, rounds: nextRounds });
       setStorageError('');
@@ -48,6 +51,7 @@ export function App() {
   }
 
   function saveCustomCourse(course: Course): void {
+    if (recoveryRequired) return;
     const nextCourses = customCourses.some((existingCourse) => existingCourse.id === course.id)
       ? customCourses.map((existingCourse) => existingCourse.id === course.id ? course : existingCourse)
       : [...customCourses, course];
@@ -83,6 +87,11 @@ export function App() {
   }
 
   function startRound(courseId: string): void {
+    if (recoveryRequired) return;
+    if (inProgressRound) {
+      resumeRound(inProgressRound.id);
+      return;
+    }
     const course = courses.find((existingCourse) => existingCourse.id === courseId);
     if (!course) return;
 
@@ -101,6 +110,7 @@ export function App() {
   }
 
   function changeRoundStrokes(roundId: string, holeNumber: number, strokes: number | undefined): void {
+    if (recoveryRequired) return;
     let changed = false;
     const nextRounds = rounds.map((round) => {
       if (round.id !== roundId) return round;
@@ -119,6 +129,7 @@ export function App() {
   }
 
   function finishRound(roundId: string): void {
+    if (recoveryRequired) return;
     let completedRound: Round | undefined;
     const nextRounds = rounds.map((round) => {
       if (round.id !== roundId) return round;
@@ -151,16 +162,34 @@ export function App() {
     setActiveRoundId(undefined);
   }
 
+  function resetSavedData(): void {
+    try {
+      store.reset();
+      setCustomCourses([]);
+      setRounds([]);
+      setRecoveryRequired(false);
+      setStorageError('');
+    } catch {
+      setStorageError(storageErrorMessage);
+    }
+  }
+
   return (
     <main className="app-shell">
       <header className="app-header">
         <p className="eyebrow">Golf Scorecard</p>
         <h1>{activeTab === 'history' ? 'History' : activeTab === 'courses' ? 'Courses' : 'Start a round'}</h1>
       </header>
+      {recoveryRequired ? (
+        <div className="recovery-panel" role="alert">
+          <p>Saved scorecard data could not be read. It has been preserved as a recovery backup.</p>
+          <button className="secondary-button" onClick={resetSavedData}>Reset saved data</button>
+        </div>
+      ) : null}
       {storageError ? <p className="error-list" role="alert">{storageError}</p> : null}
       {activeRound ? <ActiveRound round={activeRound} onBack={() => showCourseList('play')} onChangeStrokes={(holeNumber, strokes) => changeRoundStrokes(activeRound.id, holeNumber, strokes)} onFinishRound={() => finishRound(activeRound.id)} /> : null}
       {!activeRound && summaryRound ? <RoundSummary round={summaryRound} onBack={() => showCourseList(activeTab)} /> : null}
-      {!activeRound && !summaryRound && editingCourseId ? <CourseForm course={editingCourse} onSave={saveCustomCourse} onCancel={() => showCourseList('courses')} /> : null}
+      {!activeRound && !summaryRound && editingCourseId ? <CourseForm course={editingCourse} hasPriorRounds={rounds.some((round) => round.courseId === editingCourse?.id || round.courseSnapshot.id === editingCourse?.id)} onSave={saveCustomCourse} onCancel={() => showCourseList('courses')} /> : null}
       {!activeRound && !summaryRound && !editingCourseId && selectedCourse ? <CourseDetail course={selectedCourse} onBack={() => setSelectedCourseId(undefined)} onStartRound={startRound} onEditCourse={editCourse} /> : null}
       {!activeRound && !summaryRound && !editingCourseId && !selectedCourse && activeTab !== 'history' ? (
         <>

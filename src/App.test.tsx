@@ -112,4 +112,34 @@ describe('App course flows', () => {
     await userEvent.click(screen.getByRole('button', { name: /Resume Lakeview Nine/ }));
     expect(screen.getByLabelText('Hole 1 strokes')).toHaveValue(5);
   });
+
+  it('routes a new start request to the existing in-progress round', async () => {
+    renderApp(<App />);
+
+    await userEvent.click(screen.getByText('Lakeview Nine'));
+    await userEvent.click(screen.getByRole('button', { name: 'Start round' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await userEvent.click(screen.getByText('Parklands Championship'));
+    await userEvent.click(screen.getByRole('button', { name: 'Start round' }));
+
+    expect(screen.getByRole('heading', { name: 'Lakeview Nine' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Hole 18 strokes')).not.toBeInTheDocument();
+  });
+
+  it('warns before editing a course that is referenced by a round', async () => {
+    renderApp(<App />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Courses' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create course' }));
+    await userEvent.type(screen.getByLabelText('Course name'), 'Saturday Nine');
+    await userEvent.click(screen.getByRole('button', { name: 'Save course' }));
+    await userEvent.click(screen.getByText('Saturday Nine'));
+    await userEvent.click(screen.getByRole('button', { name: 'Start round' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Courses' }));
+    await userEvent.click(screen.getByText('Saturday Nine'));
+    await userEvent.click(screen.getByRole('button', { name: 'Edit course' }));
+
+    expect(screen.getByText(/Historical scorecards keep their original hole data/)).toBeInTheDocument();
+  });
 });

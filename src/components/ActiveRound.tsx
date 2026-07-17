@@ -18,6 +18,12 @@ export function ActiveRound({ round, onBack, onChangeStrokes, onFinishRound }: A
         <h1>{round.courseSnapshot.name}</h1>
         <p>{totals.completedHoles}/{round.courseSnapshot.holeCount} holes · Total {totals.totalStrokes} · {formatScoreToPar(totals.scoreToPar)}</p>
       </header>
+      {round.courseSnapshot.holeCount === 18 ? (
+        <div className="summary-strip" aria-label="Front and back totals">
+          <span>Out {totals.frontNineStrokes} · Par {totals.frontNinePar}</span>
+          <span>In {totals.backNineStrokes} · Par {totals.backNinePar}</span>
+        </div>
+      ) : null}
       <div className="score-entry-list">
         {round.courseSnapshot.holes.map((hole) => {
           const score = round.scores.find((entry) => entry.holeNumber === hole.number);
@@ -25,7 +31,7 @@ export function ActiveRound({ round, onBack, onChangeStrokes, onFinishRound }: A
             <label key={hole.number} className="score-entry-row">
               <span>
                 <strong>Hole {hole.number}</strong>
-                <small>Par {hole.par}{hole.strokeIndex ? ` · SI ${hole.strokeIndex}` : ''}</small>
+                <small>Par {hole.par}{hole.strokeIndex ? ` · SI ${hole.strokeIndex}` : ''}{hole.teeDistance ? ` · ${hole.teeDistance} ${hole.teeDistanceUnit ?? 'meters'}` : ''}</small>
               </span>
               <input
                 aria-label={`Hole ${hole.number} strokes`}

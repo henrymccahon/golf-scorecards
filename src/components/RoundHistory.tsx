@@ -23,7 +23,7 @@ export function RoundHistory({ rounds, onOpenRound }: RoundHistoryProps) {
             return (
               <button key={round.id} className="course-row" onClick={() => onOpenRound(round.id)}>
                 <strong>{round.courseSnapshot.name}</strong>
-                <small>Total {totals.totalStrokes} · {new Date(round.completedAt ?? round.startedAt).toLocaleDateString()}</small>
+                <small>Total {totals.totalStrokes} · {formatScoreToPar(totals.scoreToPar)} · {new Date(round.completedAt ?? round.startedAt).toLocaleDateString()}</small>
               </button>
             );
           })}
@@ -31,4 +31,9 @@ export function RoundHistory({ rounds, onOpenRound }: RoundHistoryProps) {
       )}
     </section>
   );
+}
+
+function formatScoreToPar(scoreToPar: number) {
+  if (scoreToPar === 0) return 'E';
+  return scoreToPar > 0 ? `+${scoreToPar}` : `${scoreToPar}`;
 }

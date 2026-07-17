@@ -44,3 +44,18 @@ This occurred before Vitest could load or execute any tests.
 ## Controller verification
 
 - `npm test -- --run src/domain/courses.test.ts src/domain/rounds.test.ts src/storage/localStore.test.ts`: PASS, 3 test files passed, 8 tests passed.
+
+## Task 2 review findings fix
+
+- Added focused regression coverage for fresh empty-state objects and corrupt persisted JSON in `src/storage/localStore.test.ts`.
+- RED: `npm test -- --run src/storage/localStore.test.ts` was blocked before Vitest test discovery by the Vite/esbuild environment error below.
+- GREEN: the required focused command and combined command were rerun after the fix and remained blocked by the same startup error. `npx tsc --noEmit` passed with exit code 0.
+- Exact Vitest startup error:
+
+```text
+X [ERROR] Cannot read directory "../../../..": Access is denied.
+
+X [ERROR] Could not resolve "C:\\Users\\f810863\\Documents\\Codex\\2026-07-17\\superpowers-plugin-superpowers-openai-curated-remote\\vite.config.ts"
+```
+
+- Production fix: `load()` now creates a fresh empty state for missing data, and malformed JSON falls back to a fresh empty state instead of throwing.

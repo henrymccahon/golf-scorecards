@@ -44,4 +44,21 @@ describe('local scorecard store', () => {
 
     expect(store.load()).toEqual({ customCourses: [], rounds: [] });
   });
+
+  it('returns a fresh empty state for each empty load', () => {
+    const store = createLocalScorecardStore(new MemoryStorage(), 'test-key');
+
+    const firstLoad = store.load();
+    firstLoad.rounds.push(round);
+
+    expect(store.load()).toEqual({ customCourses: [], rounds: [] });
+  });
+
+  it('falls back to empty data when persisted JSON is corrupt', () => {
+    const storage = new MemoryStorage();
+    storage.setItem('test-key', '{corrupt');
+    const store = createLocalScorecardStore(storage, 'test-key');
+
+    expect(store.load()).toEqual({ customCourses: [], rounds: [] });
+  });
 });

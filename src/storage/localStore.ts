@@ -10,10 +10,24 @@ export interface ScorecardStore {
   save(data: ScorecardData): void;
 }
 
-const emptyData: ScorecardData = {
-  customCourses: [],
-  rounds: []
-};
+function createEmptyData(): ScorecardData {
+  return {
+    customCourses: [],
+    rounds: []
+  };
+}
+
+function parseStoredData(raw: string): ScorecardData {
+  try {
+    const parsed = JSON.parse(raw) as Partial<ScorecardData>;
+    return {
+      customCourses: Array.isArray(parsed.customCourses) ? parsed.customCourses : [],
+      rounds: Array.isArray(parsed.rounds) ? parsed.rounds : []
+    };
+  } catch {
+    return createEmptyData();
+  }
+}
 
 export function createLocalScorecardStore(
   storage: Storage,
@@ -23,14 +37,10 @@ export function createLocalScorecardStore(
     load() {
       const raw = storage.getItem(key);
       if (!raw) {
-        return emptyData;
+        return createEmptyData();
       }
 
-      const parsed = JSON.parse(raw) as Partial<ScorecardData>;
-      return {
-        customCourses: Array.isArray(parsed.customCourses) ? parsed.customCourses : [],
-        rounds: Array.isArray(parsed.rounds) ? parsed.rounds : []
-      };
+      return parseStoredData(raw);
     },
     save(data) {
       storage.setItem(key, JSON.stringify(data));

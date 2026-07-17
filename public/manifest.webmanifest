@@ -1,0 +1,9 @@
+{
+  "name": "Golf Scorecard",
+  "short_name": "Scorecard",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F7F4EA",
+  "theme_color": "#174A3C",
+  "icons": []
+}

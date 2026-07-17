@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-labelledby="title">
+  <title id="title">Golf Scorecard</title>
+  <rect width="192" height="192" rx="32" fill="#174A3C"/>
+  <rect x="32" y="32" width="128" height="128" rx="12" fill="#F7F4EA"/>
+  <path d="M48 68h96M48 96h96M48 124h96M80 48v96M112 48v96" fill="none" stroke="#174A3C" stroke-width="6"/>
+  <circle cx="96" cy="96" r="15" fill="#D68C45"/>
+  <path d="M96 81v-25M96 56h25l-12 10 12 10H96" fill="none" stroke="#174A3C" stroke-width="5" stroke-linejoin="round"/>
+</svg>

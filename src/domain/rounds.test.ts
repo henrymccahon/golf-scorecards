@@ -2,20 +2,23 @@ import { describe, expect, it } from 'vitest';
 import { createRoundFromCourse, completeRound, getRoundTotals, setHoleStrokes } from './rounds';
 import type { Course } from './types';
 
-const course: Course = {
-  id: 'course-1',
-  name: 'Test Links',
-  source: 'custom',
-  holeCount: 9,
-  holes: Array.from({ length: 9 }, (_, index) => ({
-    number: index + 1,
-    par: index === 0 ? 5 : 4,
-    strokeIndex: index + 1
-  }))
-};
+function makeCourse(): Course {
+  return {
+    id: 'course-1',
+    name: 'Test Links',
+    source: 'custom',
+    holeCount: 9,
+    holes: Array.from({ length: 9 }, (_, index) => ({
+      number: index + 1,
+      par: index === 0 ? 5 : 4,
+      strokeIndex: index + 1
+    }))
+  };
+}
 
 describe('round domain', () => {
   it('creates a round with a scorecard snapshot', () => {
+    const course = makeCourse();
     const round = createRoundFromCourse(course, {
       id: 'round-1',
       startedAt: '2026-07-17T01:00:00.000Z'
@@ -30,6 +33,7 @@ describe('round domain', () => {
   });
 
   it('calculates running totals against completed holes only', () => {
+    const course = makeCourse();
     const round = createRoundFromCourse(course, {
       id: 'round-1',
       startedAt: '2026-07-17T01:00:00.000Z'
@@ -50,6 +54,7 @@ describe('round domain', () => {
   });
 
   it('rejects invalid strokes and incomplete completion', () => {
+    const course = makeCourse();
     const round = createRoundFromCourse(course, {
       id: 'round-1',
       startedAt: '2026-07-17T01:00:00.000Z'

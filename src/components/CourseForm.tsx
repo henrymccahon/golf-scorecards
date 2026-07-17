@@ -74,7 +74,7 @@ export function CourseForm({ course, onSave, onCancel }: CourseFormProps) {
         {holes.map((hole, index) => (
           <div key={hole.number} className="hole-form">
             <strong>Hole {hole.number}</strong>
-            <label>Par<input aria-label={`Hole ${hole.number} par`} type="number" min="1" value={hole.par} onChange={(event) => updateHole(index, 'par', event.target.value)} /></label>
+            <label>Par<input aria-label={`Hole ${hole.number} par`} type="number" min="1" value={hole.par ?? ''} onChange={(event) => updateHole(index, 'par', event.target.value)} /></label>
             <label>Stroke index<input aria-label={`Hole ${hole.number} stroke index`} type="number" min="1" value={hole.strokeIndex ?? ''} onChange={(event) => updateHole(index, 'strokeIndex', event.target.value)} /></label>
             <label>Tee distance<input aria-label={`Hole ${hole.number} tee distance`} type="number" min="1" value={hole.teeDistance ?? ''} onChange={(event) => updateHole(index, 'teeDistance', event.target.value)} /></label>
           </div>

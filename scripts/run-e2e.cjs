@@ -24,7 +24,7 @@ function stripAnsi(text) {
 function captureServerOutput(chunk) {
   const text = chunk.toString();
   serverOutput += text;
-  if (stripAnsi(text).includes('http://127.0.0.1:5173/')) {
+  if (stripAnsi(serverOutput).includes('http://127.0.0.1:5173/')) {
     serverReportedReady = true;
   }
 }

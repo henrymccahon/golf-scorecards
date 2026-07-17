@@ -30,6 +30,8 @@
 - `npm run e2e`: PASS, 1 Playwright test passed.
 - `npm test -- --run`: PASS, 4 test files passed, 17 tests passed.
 - `npm run build`: PASS.
+- Final reviewer robustness note: changed readiness detection to inspect accumulated Vite output so a ready URL split across stream chunks cannot cause a false timeout.
+- `npm run e2e`: PASS, 1 Playwright test passed after the accumulated-output readiness cleanup.
 - Mobile 320px layout check: PASS. Confirmed no horizontal overflow, visible search input, bottom navigation fits on the Play screen, active score rows and numeric inputs are readable, Finish round is reachable, and active scoring no longer has bottom-nav overlap.
 
 ## Files Changed

@@ -59,3 +59,9 @@ X [ERROR] Could not resolve "C:\\Users\\f810863\\Documents\\Codex\\2026-07-17\\s
 ```
 
 - Production fix: `load()` now creates a fresh empty state for missing data, and malformed JSON falls back to a fresh empty state instead of throwing.
+
+## Controller verification after project relocation
+
+- Project copied to `C:\Dev\Projects\golf` to avoid the deep generated Codex path that caused Vitest/esbuild config-loading failures.
+- `npm test -- --run src/storage/localStore.test.ts`: PASS, 1 test file passed, 4 tests passed.
+- `npm test -- --run src/domain/courses.test.ts src/domain/rounds.test.ts src/storage/localStore.test.ts`: PASS, 3 test files passed, 10 tests passed.

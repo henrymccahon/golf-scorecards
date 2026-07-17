@@ -35,3 +35,8 @@ DONE_WITH_CONCERNS
 - `npm test -- --run src/domain/courses.test.ts`: BLOCKED before test execution by esbuild/Vite environment error: `Cannot read directory "../../../..": Access is denied.` and `Could not resolve "...\\vite.config.ts"`.
 - `npm run build`: BLOCKED during Vite build after TypeScript completed by the same esbuild/Vite environment error: `Cannot read directory "../../../..": Access is denied.` and `Could not resolve "...\\vite.config.ts"`.
 - Manifest JSON parsing confirmed both icon entries and SVG headers confirmed explicit `192x192` and `512x512` dimensions.
+
+## Controller verification after fix
+
+- `npm test -- --run src/domain/courses.test.ts`: PASS, 3/3 tests passing.
+- `npm run build`: PASS, production build completed and wrote assets to `dist/`.

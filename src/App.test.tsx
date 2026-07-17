@@ -34,4 +34,48 @@ describe('App course flows', () => {
       consoleError.mockRestore();
     }
   });
+
+  it('shows validation errors without saving an invalid custom course', async () => {
+    renderApp(<App />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Courses' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create course' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save course' }));
+
+    expect(screen.getByText('Course name is required.')).toBeInTheDocument();
+    expect(screen.queryByText('custom')).not.toBeInTheDocument();
+  });
+
+  it('persists custom courses across remounts', async () => {
+    const firstRender = renderApp(<App />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Courses' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create course' }));
+    await userEvent.type(screen.getByLabelText('Course name'), 'Saturday Nine');
+    await userEvent.click(screen.getByRole('button', { name: 'Save course' }));
+
+    firstRender.unmount();
+    renderAppWithExistingStorage(<App />);
+
+    expect(screen.getByText('Saturday Nine')).toBeInTheDocument();
+  });
+
+  it('edits a custom course without changing seeded courses', async () => {
+    renderApp(<App />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Courses' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create course' }));
+    await userEvent.type(screen.getByLabelText('Course name'), 'Saturday Nine');
+    await userEvent.click(screen.getByRole('button', { name: 'Save course' }));
+
+    await userEvent.click(screen.getByText('Saturday Nine'));
+    await userEvent.click(screen.getByRole('button', { name: 'Edit course' }));
+    await userEvent.clear(screen.getByLabelText('Course name'));
+    await userEvent.type(screen.getByLabelText('Course name'), 'Sunday Nine');
+    await userEvent.click(screen.getByRole('button', { name: 'Save course' }));
+
+    expect(screen.getByText('Sunday Nine')).toBeInTheDocument();
+    expect(screen.queryByText('Saturday Nine')).not.toBeInTheDocument();
+    expect(screen.getByText('Lakeview Nine')).toBeInTheDocument();
+  });
 });

@@ -76,6 +76,13 @@ Result: passed with exit code 0.
 - GREEN: changed the par input to render blank as `''` instead of `undefined`; `npm test -- --run src/App.test.tsx` passed, 1 file passed, 2 tests passed.
 - Final verification: `npm test -- --run src/App.test.tsx src/domain/courses.test.ts src/domain/rounds.test.ts src/storage/localStore.test.ts` passed, 4 test files passed, 12 tests passed.
 
+## Controller review response
+
+- Task 3 review raised start/resume/history behavior as Critical, but those workflows are explicitly assigned to Task 4 in the implementation plan. They remain cross-task verification items, not Task 3 blockers.
+- Added Task 3-focused app coverage for validation errors, custom-course persistence across remounts, and editing a custom course without changing seeded courses.
+- `npm test -- --run src/App.test.tsx`: PASS, 1 test file passed, 5 tests passed.
+- `npm test -- --run src/App.test.tsx src/domain/courses.test.ts src/domain/rounds.test.ts src/storage/localStore.test.ts`: PASS, 4 test files passed, 15 tests passed.
+
 ## Commit
 
 `5d441cd feat: add course search and custom course UI`

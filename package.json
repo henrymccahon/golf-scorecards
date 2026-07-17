@@ -8,7 +8,8 @@
     "build": "tsc && vite build",
     "test": "vitest",
     "test:run": "vitest run",
-    "e2e": "playwright test"
+    "e2e:install": "powershell -NoProfile -Command \"$env:PLAYWRIGHT_BROWSERS_PATH='.ms-playwright'; .\\node_modules\\.bin\\playwright.cmd install chromium\"",
+    "e2e": "node scripts/run-e2e.cjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.1",

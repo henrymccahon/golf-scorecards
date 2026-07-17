@@ -1,0 +1,10 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+.ms-playwright/
+work/
+
+.superpowers/sdd/progress.md
+.superpowers/sdd/task-*-brief.md
+.superpowers/sdd/review-task-*.diff

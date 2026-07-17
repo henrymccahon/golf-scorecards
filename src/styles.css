@@ -170,3 +170,51 @@ p {
   color: #9d2f26;
   margin: 0;
 }
+
+.score-entry-list {
+  display: grid;
+  gap: 10px;
+}
+
+.score-entry-row {
+  display: grid;
+  grid-template-columns: 1fr 88px;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #d8d0bf;
+  border-radius: 8px;
+  background: #fffdf7;
+  padding: 12px;
+}
+
+.score-entry-row small {
+  display: block;
+  color: #64736c;
+  margin-top: 3px;
+}
+
+.score-entry-row input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #cfc6b4;
+  border-radius: 8px;
+  padding: 8px;
+  text-align: center;
+}
+
+.primary-button:disabled {
+  opacity: 0.55;
+}
+
+.summary-strip {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.summary-strip span {
+  border-radius: 8px;
+  background: #e4efe8;
+  padding: 12px;
+  font-weight: 800;
+}

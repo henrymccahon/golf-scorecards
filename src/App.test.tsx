@@ -78,4 +78,38 @@ describe('App course flows', () => {
     expect(screen.queryByText('Saturday Nine')).not.toBeInTheDocument();
     expect(screen.getByText('Lakeview Nine')).toBeInTheDocument();
   });
+
+  it('starts a seeded course round, records strokes, finishes it, and shows history', async () => {
+    renderApp(<App />);
+
+    await userEvent.click(screen.getByText('Lakeview Nine'));
+    await userEvent.click(screen.getByRole('button', { name: 'Start round' }));
+
+    for (let hole = 1; hole <= 9; hole += 1) {
+      await userEvent.clear(screen.getByLabelText(`Hole ${hole} strokes`));
+      await userEvent.type(screen.getByLabelText(`Hole ${hole} strokes`), '4');
+    }
+
+    await userEvent.click(screen.getByRole('button', { name: 'Finish round' }));
+    expect(screen.getByText('Total 36')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'History' }));
+    expect(screen.getByText('Lakeview Nine')).toBeInTheDocument();
+    expect(screen.getByText(/Total 36/)).toBeInTheDocument();
+  });
+
+  it('resumes an in-progress autosaved round after remount', async () => {
+    const firstRender = renderApp(<App />);
+
+    await userEvent.click(screen.getByText('Lakeview Nine'));
+    await userEvent.click(screen.getByRole('button', { name: 'Start round' }));
+    await userEvent.clear(screen.getByLabelText('Hole 1 strokes'));
+    await userEvent.type(screen.getByLabelText('Hole 1 strokes'), '5');
+
+    firstRender.unmount();
+    renderAppWithExistingStorage(<App />);
+
+    await userEvent.click(screen.getByRole('button', { name: /Resume Lakeview Nine/ }));
+    expect(screen.getByLabelText('Hole 1 strokes')).toHaveValue(5);
+  });
 });

@@ -15,16 +15,24 @@ const server = spawn(
 );
 
 let serverOutput = '';
+let serverExitCode = null;
 server.stdout.on('data', (chunk) => {
   serverOutput += chunk.toString();
 });
 server.stderr.on('data', (chunk) => {
   serverOutput += chunk.toString();
 });
+server.on('exit', (code) => {
+  serverExitCode = code ?? 1;
+});
 
 async function waitForServer(url, timeoutMs) {
   const startedAt = Date.now();
   while (Date.now() - startedAt < timeoutMs) {
+    if (serverExitCode !== null) {
+      throw new Error(`Vite dev server exited before E2E could start (code ${serverExitCode}).\n${serverOutput}`);
+    }
+
     try {
       const response = await fetch(url);
       if (response.ok) return;

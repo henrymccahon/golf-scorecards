@@ -43,3 +43,12 @@
 ## Issues Or Concerns
 
 - Npm still prints a machine-level `always-auth` config warning before/after commands. Direct app/test output is otherwise clean, and this warning comes from the user's npm configuration rather than the project.
+
+## Review findings fix
+
+- Restored bottom navigation during active rounds and solved active-round overlap with CSS-only spacing, as required by the Task 5 brief.
+- Hardened `scripts/run-e2e.cjs` so it fails if the Vite server exits before E2E starts, preventing false positives against a stale or unrelated server.
+- Mobile 320px bottom-state check: PASS. Confirmed no horizontal overflow, Hole 9 input and Finish round are above the fixed nav, score input is readable, and the fixed nav remains available.
+- `npm test -- --run`: PASS, 4 test files passed, 17 tests passed.
+- `npm run build`: PASS.
+- `npm run e2e`: PASS, 1 Playwright test passed.

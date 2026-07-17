@@ -169,7 +169,7 @@ export function App() {
         </>
       ) : null}
       {!activeRound && !summaryRound && !editingCourseId && !selectedCourse && activeTab === 'history' ? <RoundHistory rounds={rounds} onOpenRound={openCompletedRound} /> : null}
-      {!activeRound ? <BottomNav activeTab={activeTab} onSelect={showCourseList} /> : null}
+      <BottomNav activeTab={activeTab} onSelect={showCourseList} />
     </main>
   );
 }

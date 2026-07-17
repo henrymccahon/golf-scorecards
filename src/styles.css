@@ -55,3 +55,118 @@ p {
   margin: 0;
   padding-left: 18px;
 }
+
+.screen {
+  display: grid;
+  gap: 16px;
+}
+
+.screen-header p {
+  color: #64736c;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.field input,
+.field select,
+.hole-form input,
+.hole-form select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #cfc6b4;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fffdf7;
+}
+
+.course-list,
+.scorecard-grid,
+.form-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.course-row,
+.hole-card,
+.hole-form,
+.resume-banner {
+  width: 100%;
+  border: 1px solid #d8d0bf;
+  border-radius: 8px;
+  background: #fffdf7;
+  color: #17362f;
+  padding: 14px;
+  text-align: left;
+}
+
+.course-row small {
+  display: block;
+  color: #64736c;
+  margin-top: 4px;
+}
+
+.primary-button,
+.secondary-button,
+.text-button {
+  min-height: 44px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 10px 14px;
+  font-weight: 800;
+}
+
+.primary-button {
+  background: #174a3c;
+  color: #ffffff;
+}
+
+.secondary-button {
+  background: #ffffff;
+  color: #174a3c;
+  border-color: #174a3c;
+}
+
+.text-button {
+  background: transparent;
+  color: #174a3c;
+  justify-self: start;
+}
+
+.bottom-nav {
+  position: fixed;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  width: min(520px, calc(100% - 24px));
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  border: 1px solid #d8d0bf;
+  border-radius: 12px;
+  background: #fffdf7;
+  padding: 8px;
+  box-shadow: 0 10px 30px rgba(23, 54, 47, 0.16);
+}
+
+.bottom-nav button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #465750;
+  font-weight: 800;
+}
+
+.bottom-nav button.active {
+  background: #e4efe8;
+  color: #174a3c;
+}
+
+.error-list {
+  color: #9d2f26;
+  margin: 0;
+}

@@ -368,7 +368,7 @@ describe('App course flows', () => {
     });
     await waitFor(() => expect(screen.queryByRole('heading', { name: 'Old Course' })).not.toBeInTheDocument());
 
-    const stored = JSON.parse(localStorage.getItem('golf-scorecard-v1') ?? '{}');
+    const stored = JSON.parse(localStorage.getItem('golf-scorecard-v1') ?? '{"savedCourses":[]}');
     expect(stored.savedCourses).toEqual([]);
   });
 

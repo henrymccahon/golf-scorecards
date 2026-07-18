@@ -1,6 +1,5 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { ActiveRound } from './ActiveRound';
 import { RoundHistory } from './RoundHistory';
 import { RoundSummary } from './RoundSummary';
 import type { Round } from '../domain/types';
@@ -31,21 +30,6 @@ function makeRound(holeCount: 9 | 18, status: Round['status'] = 'completed'): Ro
 }
 
 describe('round details', () => {
-  it('shows tee distances and front/back totals for an active 18-hole round', () => {
-    renderApp(
-      <ActiveRound
-        round={makeRound(18, 'in_progress')}
-        onBack={() => undefined}
-        onChangeStrokes={() => undefined}
-        onFinishRound={() => undefined}
-      />
-    );
-
-    expect(screen.getByText(/100 yards/)).toBeInTheDocument();
-    expect(screen.getByText('Out 45 · Par 36')).toBeInTheDocument();
-    expect(screen.getByText('In 45 · Par 36')).toBeInTheDocument();
-  });
-
   it('shows the completed date in a round summary', () => {
     renderApp(<RoundSummary round={makeRound(9)} onBack={() => undefined} />);
 

@@ -45,6 +45,8 @@ npm run build
 
 Install the local Playwright browser once:
 
+This command is Windows-only because it invokes PowerShell and `playwright.cmd`.
+
 ```powershell
 npm run e2e:install
 ```

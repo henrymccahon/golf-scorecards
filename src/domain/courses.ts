@@ -5,7 +5,18 @@ export function calculateCoursePar(course: Course): number {
 }
 
 export function getCourseSearchText(course: Course): string {
-  return `${course.name} ${course.source} ${course.holeCount}`.toLowerCase();
+  return [
+    course.name,
+    course.source,
+    String(course.holeCount),
+    course.providerRef?.providerName,
+    course.providerRef?.country,
+    course.providerRef?.region,
+    course.providerRef?.locality
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
 }
 
 export function validateCourse(course: Course): string[] {

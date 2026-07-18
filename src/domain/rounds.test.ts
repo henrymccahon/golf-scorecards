@@ -32,6 +32,33 @@ describe('round domain', () => {
     expect(round.courseSnapshot.holes[0].par).toBe(5);
   });
 
+  it('copies provider metadata into the round snapshot', () => {
+    const course: Course = {
+      id: 'provided-demo-augusta-national',
+      name: 'Augusta National',
+      source: 'imported',
+      holeCount: 9,
+      providerRef: {
+        providerId: 'demo',
+        externalCourseId: 'augusta-national',
+        providerName: 'Demo Provider',
+        country: 'United States',
+        region: 'Georgia',
+        locality: 'Augusta',
+        lastFetchedAt: '2026-07-18T00:00:00.000Z',
+        attribution: 'Demo data'
+      },
+      holes: Array.from({ length: 9 }, (_, index) => ({ number: index + 1, par: 4 }))
+    };
+
+    const round = createRoundFromCourse(course, {
+      id: 'round-provider',
+      startedAt: '2026-07-18T01:00:00.000Z'
+    });
+
+    expect(round.courseSnapshot.providerRef).toEqual(course.providerRef);
+  });
+
   it('calculates running totals against completed holes only', () => {
     const course = makeCourse();
     const round = createRoundFromCourse(course, {

@@ -47,4 +47,27 @@ describe('course domain', () => {
   it('builds searchable text from course name and source', () => {
     expect(getCourseSearchText(validNine)).toBe('lakeview nine custom 9');
   });
+
+  it('includes provider metadata in searchable text', () => {
+    const providedCourse: Course = {
+      ...validNine,
+      id: 'provided-demo-augusta-national',
+      name: 'Augusta National',
+      source: 'imported',
+      providerRef: {
+        providerId: 'demo',
+        externalCourseId: 'augusta-national',
+        providerName: 'Demo Provider',
+        country: 'United States',
+        region: 'Georgia',
+        locality: 'Augusta',
+        lastFetchedAt: '2026-07-18T00:00:00.000Z',
+        attribution: 'Demo data'
+      }
+    };
+
+    expect(getCourseSearchText(providedCourse)).toBe(
+      'augusta national imported 9 demo provider united states georgia augusta'
+    );
+  });
 });

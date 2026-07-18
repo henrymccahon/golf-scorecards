@@ -36,7 +36,7 @@ test('mobile user scores a provided 18-hole round', async ({ page }) => {
   }
 
   await page.getByRole('button', { name: 'Finish round' }).click();
-  await expect(page.getByText('Total 72')).toBeVisible();
+  await expect(page.getByText('Total 72', { exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: 'History' }).click();
   await expect(page.getByLabel('Round history')).toContainText('Augusta National');

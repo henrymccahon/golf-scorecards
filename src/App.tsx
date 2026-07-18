@@ -10,6 +10,7 @@ import { seedCourses } from './data/seedCourses';
 import { validateCourse } from './domain/courses';
 import { completeRound, createRoundFromCourse, setHoleStrokes } from './domain/rounds';
 import type { Course, Round } from './domain/types';
+import { createProviderIdentityKey } from './providers/providerCourseMapper';
 import { staticCourseProvider } from './providers/staticCourseProvider';
 import type { CourseProvider, CourseSearchResult } from './providers/types';
 import { createLocalScorecardStore } from './storage/localStore';
@@ -78,9 +79,13 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
       .then((results) => {
         if (cancelled) return;
         const savedProviderKeys = new Set(savedCourses
-          .map((course) => course.providerRef ? `${course.providerRef.providerId}:${course.providerRef.externalCourseId}` : undefined)
+          .map((course) => course.providerRef
+            ? createProviderIdentityKey(course.providerRef.providerId, course.providerRef.externalCourseId)
+            : undefined)
           .filter(Boolean));
-        setProviderResults(results.filter((result) => !savedProviderKeys.has(`${result.providerId}:${result.externalCourseId}`)));
+        setProviderResults(results.filter((result) => !savedProviderKeys.has(
+          createProviderIdentityKey(result.providerId, result.externalCourseId)
+        )));
         setProviderStatus('idle');
       })
       .catch(() => {
@@ -247,9 +252,10 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
   async function selectProviderResult(result: CourseSearchResult): Promise<void> {
     if (recoveryRequired) return;
 
+    const resultProviderKey = createProviderIdentityKey(result.providerId, result.externalCourseId);
     const existingCourse = savedCoursesRef.current.find((course) =>
-      course.providerRef?.providerId === result.providerId &&
-      course.providerRef.externalCourseId === result.externalCourseId
+      course.providerRef !== undefined &&
+      createProviderIdentityKey(course.providerRef.providerId, course.providerRef.externalCourseId) === resultProviderKey
     );
 
     if (existingCourse) {
@@ -274,8 +280,8 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
 
       const currentCourses = savedCoursesRef.current;
       const duplicateCourse = currentCourses.find((existing) =>
-        existing.providerRef?.providerId === result.providerId &&
-        existing.providerRef.externalCourseId === result.externalCourseId
+        existing.providerRef !== undefined &&
+        createProviderIdentityKey(existing.providerRef.providerId, existing.providerRef.externalCourseId) === resultProviderKey
       );
       const nextCourses = duplicateCourse ? currentCourses : [...currentCourses, course];
       savedCoursesRef.current = nextCourses;

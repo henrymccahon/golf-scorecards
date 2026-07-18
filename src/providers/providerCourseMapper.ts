@@ -27,7 +27,11 @@ export interface ProviderCourseMappingResult {
 }
 
 export function createProviderCourseId(providerId: string, externalCourseId: string): string {
-  return `provided-${slugPart(providerId)}-${slugPart(externalCourseId)}-raw-${encodeIdentityPart(providerId)}-${encodeIdentityPart(externalCourseId)}`;
+  return `provided-${slugPart(providerId)}-${slugPart(externalCourseId)}-raw-${createProviderIdentityKey(providerId, externalCourseId)}`;
+}
+
+export function createProviderIdentityKey(providerId: string, externalCourseId: string): string {
+  return `${encodeIdentityPart(providerId)}-${encodeIdentityPart(externalCourseId)}`;
 }
 
 export function mapProviderCourseToCourse(

@@ -282,6 +282,39 @@ describe('App course flows', () => {
     expect(screen.queryByLabelText('Provided courses')).not.toBeInTheDocument();
   });
 
+  it('keeps a provider result visible when its colon-delimited identity differs from a saved course', async () => {
+    const savedCourse: Course = {
+      id: 'provided-saved',
+      name: 'Saved Course',
+      source: 'imported',
+      holeCount: 9,
+      holes: Array.from({ length: 9 }, (_, index) => ({ number: index + 1, par: 4 })),
+      providerRef: {
+        providerId: 'a:b',
+        externalCourseId: 'c',
+        providerName: 'Saved Provider',
+        lastFetchedAt: '2026-07-18T00:00:00.000Z'
+      }
+    };
+    const provider = {
+      id: 'test-provider',
+      name: 'Test Provider',
+      searchCourses: async () => [{
+        providerId: 'a',
+        externalCourseId: 'b:c',
+        name: 'Distinct Course',
+        hasScorecard: true
+      }],
+      loadCourse: async () => providerCourse('unused', 'Unused Course')
+    };
+    localStorage.setItem('golf-scorecard-v1', JSON.stringify({ savedCourses: [savedCourse], rounds: [] }));
+
+    renderAppWithExistingStorage(<App courseProvider={provider} />);
+    await userEvent.type(screen.getByLabelText('Search courses'), 'Distinct');
+
+    expect(await screen.findByRole('button', { name: /Distinct Course/ })).toBeInTheDocument();
+  });
+
   it('ignores an out-of-order provider load after a newer selection completes', async () => {
     const firstLoad = deferred<Course>();
     const secondLoad = deferred<Course>();

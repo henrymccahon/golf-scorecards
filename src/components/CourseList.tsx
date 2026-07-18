@@ -1,5 +1,6 @@
 import { calculateCoursePar, getCourseSearchText } from '../domain/courses';
 import type { Course, Round } from '../domain/types';
+import { createProviderIdentityKey } from '../providers/providerCourseMapper';
 import type { CourseSearchResult } from '../providers/types';
 
 export type ProviderSearchStatus = 'idle' | 'searching' | 'loading' | 'error';
@@ -70,7 +71,7 @@ export function CourseList({
           <div className="course-list">
             {providerResults.map((result) => (
               <button
-                key={`${result.providerId}:${result.externalCourseId}`}
+                key={createProviderIdentityKey(result.providerId, result.externalCourseId)}
                 className="course-row provider-row"
                 onClick={() => onSelectProviderResult?.(result)}
               >

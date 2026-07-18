@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createProviderCourseId, mapProviderCourseToCourse } from './providerCourseMapper';
+import { createProviderCourseId, createProviderIdentityKey, mapProviderCourseToCourse } from './providerCourseMapper';
 import type { ProviderCourseRecord } from './providerCourseMapper';
 
 const fetchedAt = '2026-07-18T00:00:00.000Z';
@@ -43,6 +43,12 @@ describe('provider course mapper', () => {
   it('creates distinct local ids for the supplied FNV-1a collision pair', () => {
     expect(createProviderCourseId('provider', 'CoURSE=[,_%#:A')).not.toBe(
       createProviderCourseId('provider', 'couRse:##^)A')
+    );
+  });
+
+  it('creates distinct provider identity keys for colon-delimited identity pairs', () => {
+    expect(createProviderIdentityKey('a:b', 'c')).not.toBe(
+      createProviderIdentityKey('a', 'b:c')
     );
   });
 

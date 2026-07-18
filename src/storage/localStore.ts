@@ -1,4 +1,5 @@
 import { validateCourse } from '../domain/courses';
+import { normalizeStrokes } from '../domain/rounds';
 import type { Course, Round } from '../domain/types';
 
 export interface ScorecardData {
@@ -68,7 +69,8 @@ function isCourse(value: unknown, allowedSources: readonly string[]): value is C
 
 function isScore(value: unknown): boolean {
   if (!isRecord(value) || !isPositiveInteger(value.holeNumber)) return false;
-  if (value.strokes !== undefined && !isPositiveInteger(value.strokes)) return false;
+  if (value.strokes !== undefined && value.strokes !== null && typeof value.strokes !== 'number') return false;
+  if (value.strokes !== undefined && value.strokes !== null && !Number.isInteger(value.strokes)) return false;
   if (value.putts !== undefined && !isPositiveInteger(value.putts)) return false;
   if (value.penalties !== undefined && (typeof value.penalties !== 'number' || !Number.isInteger(value.penalties) || value.penalties < 0)) return false;
   if (value.fairwayHit !== undefined && typeof value.fairwayHit !== 'boolean') return false;
@@ -87,6 +89,17 @@ function isRound(value: unknown): value is Round {
   ));
 }
 
+function normalizeRound(round: Round): Round {
+  return {
+    ...round,
+    scores: round.scores.map((score) => {
+      const strokes = normalizeStrokes(score.strokes);
+      const { strokes: _strokes, ...scoreWithoutStrokes } = score;
+      return strokes === undefined ? scoreWithoutStrokes : { ...scoreWithoutStrokes, strokes };
+    })
+  };
+}
+
 function parseStoredData(raw: string): ScorecardData | undefined {
   try {
     const parsed: unknown = JSON.parse(raw);
@@ -103,7 +116,7 @@ function parseStoredData(raw: string): ScorecardData | undefined {
     if (!parsed.rounds.every(isRound)) return undefined;
 
     const validatedCourses = savedCourses as Course[];
-    const validatedRounds = parsed.rounds as Round[];
+    const validatedRounds = (parsed.rounds as Round[]).map(normalizeRound);
     if (!validatedCourses.every((course) => validateCourse(course).length === 0)) return undefined;
     if (!validatedRounds.every((round) => validateCourse(round.courseSnapshot).length === 0)) return undefined;
 

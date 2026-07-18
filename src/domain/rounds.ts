@@ -12,6 +12,19 @@ export interface RoundTotals {
   backNinePar: number;
 }
 
+export function normalizeStrokes(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : undefined;
+}
+
+export function getDisplayStrokes(value: unknown): number {
+  return normalizeStrokes(value) ?? 0;
+}
+
+export function adjustStrokes(value: unknown, delta: 1 | -1): number | undefined {
+  const nextValue = getDisplayStrokes(value) + delta;
+  return nextValue > 0 ? nextValue : undefined;
+}
+
 export function createRoundFromCourse(
   course: Course,
   options: { id: string; startedAt: string; player?: string }
@@ -52,7 +65,9 @@ export function setHoleStrokes(round: Round, holeNumber: number, strokes: number
 }
 
 export function getRoundTotals(round: Round): RoundTotals {
-  const completedScores = round.scores.filter((score) => Number.isInteger(score.strokes) && score.strokes! > 0);
+  const completedScores = round.scores
+    .map((score) => ({ ...score, strokes: normalizeStrokes(score.strokes) }))
+    .filter((score) => score.strokes !== undefined);
   const holeByNumber = new Map(round.courseSnapshot.holes.map((hole) => [hole.number, hole]));
 
   const totalPar = round.courseSnapshot.holes.reduce((sum, hole) => sum + hole.par, 0);
@@ -77,7 +92,7 @@ export function getRoundTotals(round: Round): RoundTotals {
 
 export function canCompleteRound(round: Round): boolean {
   return round.scores.length === round.courseSnapshot.holeCount &&
-    round.scores.every((score) => Number.isInteger(score.strokes) && score.strokes! > 0);
+    round.scores.every((score) => normalizeStrokes(score.strokes) !== undefined);
 }
 
 export function completeRound(round: Round, completedAt: string): Round {

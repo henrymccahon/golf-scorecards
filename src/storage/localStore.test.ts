@@ -148,4 +148,25 @@ describe('local scorecard store', () => {
       recoveryRequired: false
     });
   });
+
+  it('loads nullish and zero stored strokes as unplayed omitted strokes', () => {
+    const storage = new MemoryStorage();
+    const storedRound = {
+      ...round,
+      scores: round.scores.map((score) => {
+        if (score.holeNumber === 1) return { ...score, strokes: null };
+        if (score.holeNumber === 2) return { ...score, strokes: 0 };
+        if (score.holeNumber === 3) return { ...score, strokes: 4 };
+        return score;
+      })
+    };
+    storage.setItem('test-key', JSON.stringify({ savedCourses: [course], rounds: [storedRound] }));
+
+    const loaded = createLocalScorecardStore(storage, 'test-key').load();
+
+    expect(loaded.recoveryRequired).toBe(false);
+    expect(loaded.data.rounds[0].scores[0]).toEqual({ holeNumber: 1 });
+    expect(loaded.data.rounds[0].scores[1]).toEqual({ holeNumber: 2 });
+    expect(loaded.data.rounds[0].scores[2]).toEqual({ holeNumber: 3, strokes: 4 });
+  });
 });

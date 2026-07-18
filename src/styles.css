@@ -268,7 +268,7 @@ p {
 
 .hole-navigator {
   display: grid;
-  grid-template-columns: repeat(9, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 6px;
 }
 
@@ -345,6 +345,12 @@ p {
   opacity: 0.55;
 }
 
+@media (min-width: 460px) {
+  .hole-navigator {
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+  }
+}
+
 .summary-strip {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -401,10 +407,6 @@ p {
 
   .score-value {
     font-size: 3.25rem;
-  }
-
-  .hole-navigator {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
   .bottom-nav {

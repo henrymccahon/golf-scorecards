@@ -1,67 +1,88 @@
-# Task 2 Report: Round Domain And Local Persistence
+# Task 2 Report: Single-Hole Active Round Components
 
 ## Status
 
-DONE_WITH_CONCERNS
+DONE
 
-## Work completed
+## Implementation Summary
 
-- Added `src/domain/rounds.ts` with scorecard snapshot creation, immutable stroke updates, running totals, completion eligibility, and round completion.
-- Added `src/storage/localStore.ts` with JSON-backed local scorecard persistence and empty-state defaults.
-- Added the required round-domain and local-storage test files verbatim from the task brief.
+- Replaced the legacy all-holes numeric input list with a single-hole active scoring flow.
+- Added `HoleScoreEntry` with hole metadata, display normalization, and increment/decrement controls.
+- Added `HoleNavigator` with selected and played states plus accessible hole labels.
+- Added `ScorecardReview` with totals, missing-hole routing, editable hole cards, and completion gating.
+- Updated `ActiveRound` to manage scoring/review modes and selected-hole navigation while preserving its existing prop interface.
+- Replaced legacy score-entry CSS with the specified mobile scoring, navigator, review, and narrow-screen styles.
+- Removed the obsolete active-round assertion from `RoundDetails.test.tsx` and retained completed-summary/history coverage.
 
-## TDD evidence
+## TDD Evidence
 
-- RED: `npm test -- --run src/domain/rounds.test.ts` was run, then retried once. Both attempts were blocked before test discovery by the Vite/esbuild environment error below, rather than failing because `src/domain/rounds.ts` was absent.
-- RED: `npm test -- --run src/storage/localStore.test.ts` was run, then retried once. Both attempts were blocked before test discovery by the same environment error, rather than failing because `src/storage/localStore.ts` was absent.
-- GREEN: the required combined test command was run, then retried once. Both attempts were blocked before test discovery by the same environment error.
-- Additional verification: `npx tsc --noEmit` passed with exit code 0.
+### RED
 
-## Test concern
+Created `src/components/ActiveRound.test.tsx` and removed the obsolete active-round test before modifying production code.
 
-The exact repeated Vite/esbuild startup error was:
+Command run:
 
-```text
-X [ERROR] Cannot read directory "../../../..": Access is denied.
-
-X [ERROR] Could not resolve "C:\\Users\\f810863\\Documents\\Codex\\2026-07-17\\superpowers-plugin-superpowers-openai-curated-remote\\vite.config.ts"
+```powershell
+npm test -- --run src/components/ActiveRound.test.tsx src/components/RoundDetails.test.tsx
 ```
 
-This occurred before Vitest could load or execute any tests.
+Result: expected failure. `RoundDetails.test.tsx` passed (2 tests); all 6 new `ActiveRound` tests failed because the legacy multi-hole form did not provide the required `Hole 1` heading, score stepper, navigator, review controls, or review-only finish flow.
+
+### GREEN
+
+Implemented the three new components, the `ActiveRound` state flow, and specified CSS.
+
+Command run:
+
+```powershell
+npm test -- --run src/components/ActiveRound.test.tsx src/components/RoundDetails.test.tsx src/domain/rounds.test.ts
+```
+
+Result: passed. 3 test files and 16 tests passed.
+
+## Files Changed
+
+- `src/components/ActiveRound.tsx`
+- `src/components/ActiveRound.test.tsx`
+- `src/components/HoleNavigator.tsx`
+- `src/components/HoleScoreEntry.tsx`
+- `src/components/ScorecardReview.tsx`
+- `src/components/RoundDetails.test.tsx`
+- `src/styles.css`
 
 ## Commit
 
-- `0d003e9 feat: add round domain and local persistence`
+`5e42590 feat: add mobile hole scoring flow`
 
-## Fixture isolation fix
+## Self-Review
 
-- Replaced the shared module-level course fixture in `src/domain/rounds.test.ts` with `makeCourse()` and created a fresh course in each test.
-- This prevents the snapshot test's `course.holes[0].par = 3` mutation from affecting the totals test.
-- `npx tsc --noEmit` passed with exit code 0.
-- The required combined Vitest command was retried once after the fix, but both attempts were blocked before test discovery by the Vite/esbuild environment error: `Cannot read directory "../../../..": Access is denied.` followed by `Could not resolve "C:\\Users\\f810863\\Documents\\Codex\\2026-07-17\\superpowers-plugin-superpowers-openai-curated-remote\\vite.config.ts"`.
-- Fix commit: `099a762 test: isolate round test course fixtures`
+- Confirmed `ActiveRoundProps` remains unchanged.
+- Confirmed score changes use `adjustStrokes`, so decrementing one stroke emits `undefined` rather than zero.
+- Confirmed display values use `getDisplayStrokes` for unplayed holes.
+- Confirmed finish is only rendered on the review screen and uses `canCompleteRound` for its disabled state.
+- Confirmed the first unplayed hole is routed from the review alert.
+- Ran `git diff --check` before commit; no whitespace errors were reported.
+- Kept the commit scoped to `src/components` and `src/styles.css`; unrelated existing SDD artifacts were not changed.
 
-## Controller verification
+## Concerns
 
-- `npm test -- --run src/domain/courses.test.ts src/domain/rounds.test.ts src/storage/localStore.test.ts`: PASS, 3 test files passed, 8 tests passed.
+- The test command emitted an existing npm configuration warning: `Unknown user config "always-auth"`. Tests still completed successfully.
+- The requested report is intentionally uncommitted because the prescribed Task 2 commit command stages only `src/components` and `src/styles.css`.
 
-## Task 2 review findings fix
+## Review Fix: Mobile Hole Navigator Touch Targets
 
-- Added focused regression coverage for fresh empty-state objects and corrupt persisted JSON in `src/storage/localStore.test.ts`.
-- RED: `npm test -- --run src/storage/localStore.test.ts` was blocked before Vitest test discovery by the Vite/esbuild environment error below.
-- GREEN: the required focused command and combined command were rerun after the fix and remained blocked by the same startup error. `npx tsc --noEmit` passed with exit code 0.
-- Exact Vitest startup error:
+- Changed the default `.hole-navigator` layout from nine columns to six columns so typical 381-459px mobile widths retain adequate button widths.
+- Added a `@media (min-width: 460px)` override for the compact nine-column layout.
+- Preserved the existing `min-height: 48px` button behavior.
 
-```text
-X [ERROR] Cannot read directory "../../../..": Access is denied.
+### Verification
 
-X [ERROR] Could not resolve "C:\\Users\\f810863\\Documents\\Codex\\2026-07-17\\superpowers-plugin-superpowers-openai-curated-remote\\vite.config.ts"
+Command run:
+
+```powershell
+npm test -- --run src/components/ActiveRound.test.tsx src/components/RoundDetails.test.tsx src/domain/rounds.test.ts
 ```
 
-- Production fix: `load()` now creates a fresh empty state for missing data, and malformed JSON falls back to a fresh empty state instead of throwing.
+Result: passed. 3 test files and 16 tests passed. The command emitted the existing npm configuration warning: `Unknown user config "always-auth"`.
 
-## Controller verification after project relocation
-
-- Project copied to `C:\Dev\Projects\golf` to avoid the deep generated Codex path that caused Vitest/esbuild config-loading failures.
-- `npm test -- --run src/storage/localStore.test.ts`: PASS, 1 test file passed, 4 tests passed.
-- `npm test -- --run src/domain/courses.test.ts src/domain/rounds.test.ts src/storage/localStore.test.ts`: PASS, 3 test files passed, 10 tests passed.
+CSS verification confirmed the base `.hole-navigator` uses six columns, nine columns appear only at `min-width: 460px`, and navigator buttons retain `min-height: 48px`.

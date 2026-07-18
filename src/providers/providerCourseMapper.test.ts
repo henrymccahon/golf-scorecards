@@ -28,14 +28,21 @@ const validRecord: ProviderCourseRecord = {
 
 describe('provider course mapper', () => {
   it('creates stable local ids from provider identity', () => {
-    expect(createProviderCourseId('Demo Provider', 'Augusta National #1')).toMatch(
-      /^provided-demo-provider-augusta-national-1-[a-z0-9]+$/
-    );
+    const id = createProviderCourseId('Demo Provider', 'Augusta National #1');
+
+    expect(id).toMatch(/^provided-demo-provider-augusta-national-1-raw-[a-z0-9:.\-]+$/);
+    expect(createProviderCourseId('Demo Provider', 'Augusta National #1')).toBe(id);
   });
 
   it('creates distinct local ids for raw provider identities that share a slug', () => {
     expect(createProviderCourseId('provider', 'course/a')).not.toBe(
       createProviderCourseId('provider', 'course-a')
+    );
+  });
+
+  it('creates distinct local ids for the supplied FNV-1a collision pair', () => {
+    expect(createProviderCourseId('provider', 'CoURSE=[,_%#:A')).not.toBe(
+      createProviderCourseId('provider', 'couRse:##^)A')
     );
   });
 

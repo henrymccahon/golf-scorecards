@@ -1,4 +1,4 @@
-import { calculateCoursePar } from '../domain/courses';
+import { calculateCoursePar, getCourseSourceLabel } from '../domain/courses';
 import type { Course } from '../domain/types';
 
 interface CourseDetailProps {
@@ -14,7 +14,7 @@ export function CourseDetail({ course, onBack, onStartRound, onEditCourse }: Cou
       <button className="text-button" onClick={onBack}>Back</button>
       <header className="screen-header">
         <h1>{course.name}</h1>
-        <p>{course.holeCount} holes · Par {calculateCoursePar(course)} · {course.source}</p>
+        <p>{course.holeCount} holes · Par {calculateCoursePar(course)} · {getCourseSourceLabel(course)}</p>
       </header>
       <div className="scorecard-grid">
         {course.holes.map((hole) => (

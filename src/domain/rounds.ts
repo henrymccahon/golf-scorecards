@@ -25,6 +25,7 @@ export function createRoundFromCourse(
       name: course.name,
       source: course.source,
       holeCount: course.holeCount,
+      providerRef: course.providerRef ? { ...course.providerRef } : undefined,
       holes: course.holes.map((hole) => ({ ...hole }))
     },
     startedAt: options.startedAt,

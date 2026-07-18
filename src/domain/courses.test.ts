@@ -44,7 +44,42 @@ describe('course domain', () => {
     ]);
   });
 
+  it('rejects duplicate, skipped, and out-of-order hole numbers', () => {
+    const invalidCourses = [
+      { ...validNine, holes: validNine.holes.map((hole, index) => index === 8 ? { ...hole, number: 8 } : hole) },
+      { ...validNine, holes: validNine.holes.map((hole, index) => index === 4 ? { ...hole, number: 6 } : hole) },
+      { ...validNine, holes: [validNine.holes[1], validNine.holes[0], ...validNine.holes.slice(2)] }
+    ];
+
+    for (const course of invalidCourses) {
+      expect(validateCourse(course)).toContain('Holes must be numbered sequentially from 1 to 9.');
+    }
+  });
+
   it('builds searchable text from course name and source', () => {
     expect(getCourseSearchText(validNine)).toBe('lakeview nine custom 9');
+  });
+
+  it('includes provider metadata in searchable text', () => {
+    const providedCourse: Course = {
+      ...validNine,
+      id: 'provided-demo-augusta-national',
+      name: 'Augusta National',
+      source: 'imported',
+      providerRef: {
+        providerId: 'demo',
+        externalCourseId: 'augusta-national',
+        providerName: 'Demo Provider',
+        country: 'United States',
+        region: 'Georgia',
+        locality: 'Augusta',
+        lastFetchedAt: '2026-07-18T00:00:00.000Z',
+        attribution: 'Demo data'
+      }
+    };
+
+    expect(getCourseSearchText(providedCourse)).toBe(
+      'augusta national imported 9 demo provider united states georgia augusta'
+    );
   });
 });

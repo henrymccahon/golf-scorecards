@@ -6,7 +6,8 @@ Live preview: https://henrymccahon.github.io/golf-scorecards/
 
 ## Current V1 Features
 
-- Search seeded course scorecards.
+- Search seeded and provider-backed course scorecards.
+- Save selected provided courses locally for scoring.
 - Create and edit custom 9-hole or 18-hole courses.
 - Store par, stroke index, and tee distance per hole.
 - Start a round from a course scorecard.
@@ -73,7 +74,7 @@ Use `docs/qa/v1-manual-walkthrough.md` for the first product walkthrough after d
 
 ## Known V1 Limitations
 
-- Course data is currently seeded or manually entered; there is no live course database integration yet.
+- Provider-backed course search currently uses deterministic demo data; live course database integration is the next provider step.
 - Scores are local to the device/browser.
 - Scoring is stroke-only; detailed stats such as putts, penalties, fairways, and greens are planned later.
 - There is no account system, cloud sync, or paid/pro model yet.

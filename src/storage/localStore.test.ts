@@ -31,13 +31,13 @@ const round: Round = {
 };
 
 describe('local scorecard store', () => {
-  it('saves and loads custom courses and rounds', () => {
+  it('saves and loads saved courses and rounds', () => {
     const store = createLocalScorecardStore(new MemoryStorage(), 'test-key');
 
-    store.save({ customCourses: [course], rounds: [round] });
+    store.save({ savedCourses: [course], rounds: [round] });
 
     expect(store.load()).toEqual({
-      data: { customCourses: [course], rounds: [round] },
+      data: { savedCourses: [course], rounds: [round] },
       recoveryRequired: false
     });
   });
@@ -46,7 +46,7 @@ describe('local scorecard store', () => {
     const store = createLocalScorecardStore(new MemoryStorage(), 'test-key');
 
     expect(store.load()).toEqual({
-      data: { customCourses: [], rounds: [] },
+      data: { savedCourses: [], rounds: [] },
       recoveryRequired: false
     });
   });
@@ -58,7 +58,7 @@ describe('local scorecard store', () => {
     firstLoad.data.rounds.push(round);
 
     expect(store.load()).toEqual({
-      data: { customCourses: [], rounds: [] },
+      data: { savedCourses: [], rounds: [] },
       recoveryRequired: false
     });
   });
@@ -69,12 +69,12 @@ describe('local scorecard store', () => {
     const store = createLocalScorecardStore(storage, 'test-key');
 
     expect(store.load()).toEqual({
-      data: { customCourses: [], rounds: [] },
+      data: { savedCourses: [], rounds: [] },
       recoveryRequired: true
     });
     expect(storage.getItem('test-key')).toBe('{corrupt');
     expect(storage.getItem('test-key-recovery')).toBe('{corrupt');
-    expect(() => store.save({ customCourses: [course], rounds: [round] })).toThrow('reset saved data');
+    expect(() => store.save({ savedCourses: [course], rounds: [round] })).toThrow('reset saved data');
   });
 
   it('requires recovery for malformed persisted schemas', () => {
@@ -86,6 +86,30 @@ describe('local scorecard store', () => {
     expect(storage.getItem('test-key-recovery')).toBe(storage.getItem('test-key'));
   });
 
+  it('requires recovery for saved courses that fail semantic course validation', () => {
+    const storage = new MemoryStorage();
+    const invalidCourse = {
+      ...course,
+      holes: course.holes.map((hole, index) => index === 1 ? { ...hole, strokeIndex: 1 } : { ...hole, strokeIndex: 1 })
+    };
+    storage.setItem('test-key', JSON.stringify({ savedCourses: [invalidCourse], rounds: [] }));
+
+    expect(createLocalScorecardStore(storage, 'test-key').load().recoveryRequired).toBe(true);
+    expect(storage.getItem('test-key-recovery')).toBe(storage.getItem('test-key'));
+  });
+
+  it('requires recovery for round snapshots that fail semantic course validation', () => {
+    const storage = new MemoryStorage();
+    const invalidSnapshot = {
+      ...round.courseSnapshot,
+      holes: round.courseSnapshot.holes.map((hole, index) => index === 1 ? { ...hole, strokeIndex: 1 } : { ...hole, strokeIndex: 1 })
+    };
+    storage.setItem('test-key', JSON.stringify({ savedCourses: [], rounds: [{ ...round, courseSnapshot: invalidSnapshot }] }));
+
+    expect(createLocalScorecardStore(storage, 'test-key').load().recoveryRequired).toBe(true);
+    expect(storage.getItem('test-key-recovery')).toBe(storage.getItem('test-key'));
+  });
+
   it('allows saving only after the user resets invalid saved data', () => {
     const storage = new MemoryStorage();
     storage.setItem('test-key', '{corrupt');
@@ -93,10 +117,10 @@ describe('local scorecard store', () => {
 
     store.load();
     store.reset();
-    store.save({ customCourses: [course], rounds: [round] });
+    store.save({ savedCourses: [course], rounds: [round] });
 
     expect(store.load()).toEqual({
-      data: { customCourses: [course], rounds: [round] },
+      data: { savedCourses: [course], rounds: [round] },
       recoveryRequired: false
     });
   });
@@ -112,5 +136,16 @@ describe('local scorecard store', () => {
     store.load();
 
     expect(storage.getItem('test-key-recovery')).toBe('{second-corruption');
+  });
+
+  it('migrates legacy customCourses into savedCourses', () => {
+    const storage = new MemoryStorage();
+    storage.setItem('test-key', JSON.stringify({ customCourses: [course], rounds: [round] }));
+    const store = createLocalScorecardStore(storage, 'test-key');
+
+    expect(store.load()).toEqual({
+      data: { savedCourses: [course], rounds: [round] },
+      recoveryRequired: false
+    });
   });
 });

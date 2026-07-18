@@ -10,6 +10,18 @@ Preview URL: https://henrymccahon.github.io/golf-scorecards/
 - [ ] Open on a narrow mobile width, around 320-390px.
 - [ ] Confirm the app loads without broken icons, blank screens, or missing styles.
 
+## Provided Course Flow
+
+- [ ] Search for `Augusta`.
+- [ ] Confirm `Augusta National` appears under provided courses.
+- [ ] Open `Augusta National`.
+- [ ] Confirm the course shows as an 18-hole scorecard from the demo provider.
+- [ ] Start a round.
+- [ ] Enter valid stroke values for every hole.
+- [ ] Finish the round.
+- [ ] Confirm history shows `Augusta National` and the total.
+- [ ] Reload the app and confirm `Augusta National` remains available locally.
+
 ## Seeded Course Flow
 
 - [ ] Search for `Lakeview`.

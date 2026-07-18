@@ -1,7 +1,8 @@
+import { validateCourse } from '../domain/courses';
 import type { Course, Round } from '../domain/types';
 
 export interface ScorecardData {
-  customCourses: Course[];
+  savedCourses: Course[];
   rounds: Round[];
 }
 
@@ -18,7 +19,7 @@ export interface ScorecardStore {
 
 function createEmptyData(): ScorecardData {
   return {
-    customCourses: [],
+    savedCourses: [],
     rounds: []
   };
 }
@@ -35,6 +36,19 @@ function isOptionalString(value: unknown): boolean {
   return value === undefined || typeof value === 'string';
 }
 
+function isProviderRef(value: unknown): boolean {
+  if (value === undefined) return true;
+  if (!isRecord(value)) return false;
+  if (typeof value.providerId !== 'string') return false;
+  if (typeof value.externalCourseId !== 'string') return false;
+  if (typeof value.providerName !== 'string') return false;
+  if (typeof value.lastFetchedAt !== 'string') return false;
+  if (!isOptionalString(value.country)) return false;
+  if (!isOptionalString(value.region)) return false;
+  if (!isOptionalString(value.locality)) return false;
+  return isOptionalString(value.attribution);
+}
+
 function isHole(value: unknown): boolean {
   if (!isRecord(value) || !isPositiveInteger(value.number) || !isPositiveInteger(value.par)) return false;
   if (value.strokeIndex !== undefined && !isPositiveInteger(value.strokeIndex)) return false;
@@ -48,6 +62,7 @@ function isCourse(value: unknown, allowedSources: readonly string[]): value is C
   if (value.holeCount !== 9 && value.holeCount !== 18) return false;
   if (!Array.isArray(value.holes) || value.holes.length !== value.holeCount || !value.holes.every(isHole)) return false;
   if (!isOptionalString(value.createdAt) || !isOptionalString(value.updatedAt)) return false;
+  if (!isProviderRef(value.providerRef)) return false;
   return value.holes.every((hole, index) => isRecord(hole) && hole.number === index + 1);
 }
 
@@ -75,11 +90,26 @@ function isRound(value: unknown): value is Round {
 function parseStoredData(raw: string): ScorecardData | undefined {
   try {
     const parsed: unknown = JSON.parse(raw);
-    if (!isRecord(parsed) || !Array.isArray(parsed.customCourses) || !Array.isArray(parsed.rounds)) return undefined;
-    if (!parsed.customCourses.every((course) => isCourse(course, ['custom'])) || !parsed.rounds.every(isRound)) return undefined;
+    if (!isRecord(parsed) || !Array.isArray(parsed.rounds)) return undefined;
+
+    const savedCourses = Array.isArray(parsed.savedCourses)
+      ? parsed.savedCourses
+      : Array.isArray(parsed.customCourses)
+        ? parsed.customCourses
+        : undefined;
+
+    if (!Array.isArray(savedCourses)) return undefined;
+    if (!savedCourses.every((course) => isCourse(course, ['custom', 'imported']))) return undefined;
+    if (!parsed.rounds.every(isRound)) return undefined;
+
+    const validatedCourses = savedCourses as Course[];
+    const validatedRounds = parsed.rounds as Round[];
+    if (!validatedCourses.every((course) => validateCourse(course).length === 0)) return undefined;
+    if (!validatedRounds.every((round) => validateCourse(round.courseSnapshot).length === 0)) return undefined;
+
     return {
-      customCourses: parsed.customCourses as Course[],
-      rounds: parsed.rounds as Round[]
+      savedCourses: validatedCourses,
+      rounds: validatedRounds
     };
   } catch {
     return undefined;

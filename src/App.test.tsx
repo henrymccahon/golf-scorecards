@@ -1,10 +1,37 @@
-import { screen } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { seedCourses } from './data/seedCourses';
 import { createRoundFromCourse } from './domain/rounds';
+import type { Course } from './domain/types';
 import { renderApp, renderAppWithExistingStorage } from './test/render';
+
+function deferred<T>() {
+  let resolve: (value: T) => void;
+  let reject: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve: resolve!, reject: reject! };
+}
+
+function providerCourse(externalCourseId: string, name: string): Course {
+  return {
+    id: `provided-test-provider-${externalCourseId}`,
+    name,
+    source: 'imported',
+    holeCount: 9,
+    holes: Array.from({ length: 9 }, (_, index) => ({ number: index + 1, par: 4 })),
+    providerRef: {
+      providerId: 'test-provider',
+      externalCourseId,
+      providerName: 'Test Provider',
+      lastFetchedAt: '2026-07-18T00:00:00.000Z'
+    }
+  };
+}
 
 describe('App course flows', () => {
   it('searches seeded courses', async () => {
@@ -20,7 +47,7 @@ describe('App course flows', () => {
 
     try {
       await userEvent.click(screen.getByRole('button', { name: 'Courses' }));
-      await userEvent.click(screen.getByRole('button', { name: 'Create course' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Create a custom course' }));
       await userEvent.type(screen.getByLabelText('Course name'), 'Saturday Nine');
 
       for (let hole = 1; hole <= 9; hole += 1) {
@@ -41,7 +68,7 @@ describe('App course flows', () => {
     renderApp(<App />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Courses' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Create course' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create a custom course' }));
     await userEvent.click(screen.getByRole('button', { name: 'Save course' }));
 
     expect(screen.getByText('Course name is required.')).toBeInTheDocument();
@@ -52,7 +79,7 @@ describe('App course flows', () => {
     const firstRender = renderApp(<App />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Courses' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Create course' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create a custom course' }));
     await userEvent.type(screen.getByLabelText('Course name'), 'Saturday Nine');
     await userEvent.click(screen.getByRole('button', { name: 'Save course' }));
 
@@ -66,7 +93,7 @@ describe('App course flows', () => {
     renderApp(<App />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Courses' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Create course' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create a custom course' }));
     await userEvent.type(screen.getByLabelText('Course name'), 'Saturday Nine');
     await userEvent.click(screen.getByRole('button', { name: 'Save course' }));
 
@@ -132,7 +159,7 @@ describe('App course flows', () => {
     renderApp(<App />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Courses' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Create course' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create a custom course' }));
     await userEvent.type(screen.getByLabelText('Course name'), 'Saturday Nine');
     await userEvent.click(screen.getByRole('button', { name: 'Save course' }));
     await userEvent.click(screen.getByText('Saturday Nine'));
@@ -148,7 +175,7 @@ describe('App course flows', () => {
   it('exposes every persisted in-progress round for resuming', async () => {
     const firstRound = createRoundFromCourse(seedCourses[0], { id: 'round-1', startedAt: '2026-07-17T01:00:00.000Z' });
     const secondRound = createRoundFromCourse(seedCourses[1], { id: 'round-2', startedAt: '2026-07-17T02:00:00.000Z' });
-    localStorage.setItem('golf-scorecard-v1', JSON.stringify({ customCourses: [], rounds: [firstRound, secondRound] }));
+    localStorage.setItem('golf-scorecard-v1', JSON.stringify({ savedCourses: [], rounds: [firstRound, secondRound] }));
 
     renderAppWithExistingStorage(<App />);
 
@@ -163,12 +190,225 @@ describe('App course flows', () => {
   it('does not warn when creating a course after loading a round without courseId', async () => {
     const roundWithoutCourseId = createRoundFromCourse(seedCourses[0], { id: 'round-1', startedAt: '2026-07-17T01:00:00.000Z' });
     delete roundWithoutCourseId.courseId;
-    localStorage.setItem('golf-scorecard-v1', JSON.stringify({ customCourses: [], rounds: [roundWithoutCourseId] }));
+    localStorage.setItem('golf-scorecard-v1', JSON.stringify({ savedCourses: [], rounds: [roundWithoutCourseId] }));
 
     renderAppWithExistingStorage(<App />);
     await userEvent.click(screen.getByRole('button', { name: 'Courses' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Create course' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create a custom course' }));
 
     expect(screen.queryByText(/Historical scorecards keep their original hole data/)).not.toBeInTheDocument();
+  });
+
+  it('loads legacy custom courses after storage migration', async () => {
+    const legacyCourse: Course = {
+      id: 'custom-legacy',
+      name: 'Legacy Local Nine',
+      source: 'custom',
+      holeCount: 9,
+      holes: Array.from({ length: 9 }, (_, index) => ({ number: index + 1, par: 4 }))
+    };
+    localStorage.setItem('golf-scorecard-v1', JSON.stringify({ customCourses: [legacyCourse], rounds: [] }));
+
+    renderAppWithExistingStorage(<App />);
+
+    await userEvent.type(screen.getByLabelText('Search courses'), 'Legacy');
+    expect(screen.getByText('Legacy Local Nine')).toBeInTheDocument();
+  });
+
+  it('searches provided courses, saves one locally, and starts a round from it', async () => {
+    renderApp(<App />);
+
+    await userEvent.type(screen.getByLabelText('Search courses'), 'Augusta');
+    await screen.findByLabelText('Provided courses');
+    await userEvent.click(screen.getByRole('button', { name: /Augusta National/ }));
+
+    expect(await screen.findByRole('heading', { name: 'Augusta National' })).toBeInTheDocument();
+    expect(screen.getByText(/Static Demo Provider/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Start round' }));
+    expect(screen.getByLabelText('Hole 18 strokes')).toBeInTheDocument();
+
+    const stored = JSON.parse(localStorage.getItem('golf-scorecard-v1') ?? '{}');
+    expect(stored.savedCourses[0]).toMatchObject({
+      name: 'Augusta National',
+      source: 'imported',
+      providerRef: {
+        providerId: 'static-demo',
+        externalCourseId: 'augusta-national'
+      }
+    });
+  });
+
+  it('keeps custom course creation available as the course fallback', async () => {
+    renderApp(<App />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Courses' }));
+    expect(screen.getByText("Can't find it?")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Create a custom course' }));
+
+    expect(screen.getByRole('heading', { name: 'Create course' })).toBeInTheDocument();
+  });
+
+  it('shows a non-blocking provider error when search fails', async () => {
+    const failingProvider = {
+      id: 'failing-provider',
+      name: 'Failing Provider',
+      async searchCourses() {
+        throw new Error('network unavailable');
+      },
+      async loadCourse() {
+        throw new Error('network unavailable');
+      }
+    };
+
+    renderApp(<App courseProvider={failingProvider} />);
+
+    await userEvent.type(screen.getByLabelText('Search courses'), 'Augusta');
+
+    expect(await screen.findByText('Provided course search is unavailable right now.')).toBeInTheDocument();
+    expect(screen.getByText("Can't find it?")).toBeInTheDocument();
+  });
+
+  it('does not duplicate provider courses that are already saved locally', async () => {
+    renderApp(<App />);
+
+    await userEvent.type(screen.getByLabelText('Search courses'), 'Augusta');
+    await userEvent.click(await screen.findByRole('button', { name: /Augusta National/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await userEvent.clear(screen.getByLabelText('Search courses'));
+    await userEvent.type(screen.getByLabelText('Search courses'), 'Augusta');
+
+    expect(screen.getByText('Augusta National')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Provided courses')).not.toBeInTheDocument();
+  });
+
+  it('keeps a provider result visible when its colon-delimited identity differs from a saved course', async () => {
+    const savedCourse: Course = {
+      id: 'provided-saved',
+      name: 'Saved Course',
+      source: 'imported',
+      holeCount: 9,
+      holes: Array.from({ length: 9 }, (_, index) => ({ number: index + 1, par: 4 })),
+      providerRef: {
+        providerId: 'a:b',
+        externalCourseId: 'c',
+        providerName: 'Saved Provider',
+        lastFetchedAt: '2026-07-18T00:00:00.000Z'
+      }
+    };
+    const provider = {
+      id: 'test-provider',
+      name: 'Test Provider',
+      searchCourses: async () => [{
+        providerId: 'a',
+        externalCourseId: 'b:c',
+        name: 'Distinct Course',
+        hasScorecard: true
+      }],
+      loadCourse: async () => providerCourse('unused', 'Unused Course')
+    };
+    localStorage.setItem('golf-scorecard-v1', JSON.stringify({ savedCourses: [savedCourse], rounds: [] }));
+
+    renderAppWithExistingStorage(<App courseProvider={provider} />);
+    await userEvent.type(screen.getByLabelText('Search courses'), 'Distinct');
+
+    expect(await screen.findByRole('button', { name: /Distinct Course/ })).toBeInTheDocument();
+  });
+
+  it('ignores an out-of-order provider load after a newer selection completes', async () => {
+    const firstLoad = deferred<Course>();
+    const secondLoad = deferred<Course>();
+    const firstResult = { providerId: 'test-provider', externalCourseId: 'first', name: 'First Course', hasScorecard: true };
+    const secondResult = { providerId: 'test-provider', externalCourseId: 'second', name: 'Second Course', hasScorecard: true };
+    const provider = {
+      id: 'test-provider',
+      name: 'Test Provider',
+      searchCourses: async () => [firstResult, secondResult],
+      loadCourse: (result: typeof firstResult) => result.externalCourseId === 'first' ? firstLoad.promise : secondLoad.promise
+    };
+
+    renderApp(<App courseProvider={provider} />);
+    await userEvent.type(screen.getByLabelText('Search courses'), 'Course');
+    await screen.findByLabelText('Provided courses');
+    await userEvent.click(screen.getByRole('button', { name: /First Course/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Second Course/ }));
+
+    await act(async () => {
+      secondLoad.resolve(providerCourse('second', 'Second Course'));
+    });
+    expect(await screen.findByRole('heading', { name: 'Second Course' })).toBeInTheDocument();
+
+    await act(async () => {
+      firstLoad.resolve(providerCourse('first', 'First Course'));
+    });
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'First Course' })).not.toBeInTheDocument());
+
+    const stored = JSON.parse(localStorage.getItem('golf-scorecard-v1') ?? '{}');
+    expect(stored.savedCourses).toEqual([expect.objectContaining({ id: 'provided-test-provider-second' })]);
+  });
+
+  it('ignores a provider load when the search query changes', async () => {
+    const pendingLoad = deferred<Course>();
+    const oldResult = { providerId: 'test-provider', externalCourseId: 'old', name: 'Old Course', hasScorecard: true };
+    const provider = {
+      id: 'test-provider',
+      name: 'Test Provider',
+      searchCourses: async ({ text }: { text: string }) => text === 'Old' ? [oldResult] : [],
+      loadCourse: () => pendingLoad.promise
+    };
+
+    renderApp(<App courseProvider={provider} />);
+    await userEvent.type(screen.getByLabelText('Search courses'), 'Old');
+    await userEvent.click(await screen.findByRole('button', { name: /Old Course/ }));
+    await userEvent.clear(screen.getByLabelText('Search courses'));
+    await userEvent.type(screen.getByLabelText('Search courses'), 'New');
+
+    await act(async () => {
+      pendingLoad.resolve(providerCourse('old', 'Old Course'));
+    });
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Old Course' })).not.toBeInTheDocument());
+
+    const stored = JSON.parse(localStorage.getItem('golf-scorecard-v1') ?? '{"savedCourses":[]}');
+    expect(stored.savedCourses).toEqual([]);
+  });
+
+  it('preserves an edited resumed round when a pending provider load resolves', async () => {
+    const pendingLoad = deferred<Course>();
+    const pendingResult = {
+      providerId: 'test-provider',
+      externalCourseId: 'pending',
+      name: 'Pending Course',
+      hasScorecard: true
+    };
+    const provider = {
+      id: 'test-provider',
+      name: 'Test Provider',
+      searchCourses: async () => [pendingResult],
+      loadCourse: () => pendingLoad.promise
+    };
+    const existingRound = createRoundFromCourse(seedCourses[0], {
+      id: 'round-1',
+      startedAt: '2026-07-18T01:00:00.000Z'
+    });
+    localStorage.setItem('golf-scorecard-v1', JSON.stringify({ savedCourses: [], rounds: [existingRound] }));
+
+    renderAppWithExistingStorage(<App courseProvider={provider} />);
+    await userEvent.type(screen.getByLabelText('Search courses'), 'Pending');
+    await userEvent.click(await screen.findByRole('button', { name: /Pending Course/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Resume Lakeview Nine' }));
+    await userEvent.clear(screen.getByLabelText('Hole 1 strokes'));
+    await userEvent.type(screen.getByLabelText('Hole 1 strokes'), '5');
+
+    await act(async () => {
+      pendingLoad.resolve(providerCourse('pending', 'Pending Course'));
+    });
+
+    expect(screen.getByRole('heading', { name: 'Lakeview Nine' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Hole 1 strokes')).toHaveValue(5);
+    expect(screen.queryByRole('heading', { name: 'Pending Course' })).not.toBeInTheDocument();
+
+    const stored = JSON.parse(localStorage.getItem('golf-scorecard-v1') ?? '{}');
+    expect(stored.savedCourses).toEqual([]);
+    expect(stored.rounds[0].scores[0].strokes).toBe(5);
   });
 });

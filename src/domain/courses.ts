@@ -4,8 +4,26 @@ export function calculateCoursePar(course: Course): number {
   return course.holes.reduce((total, hole) => total + hole.par, 0);
 }
 
+export function getCourseSourceLabel(course: Course): string {
+  if (course.providerRef) {
+    return course.providerRef.providerName;
+  }
+  return course.source;
+}
+
 export function getCourseSearchText(course: Course): string {
-  return `${course.name} ${course.source} ${course.holeCount}`.toLowerCase();
+  return [
+    course.name,
+    course.source,
+    String(course.holeCount),
+    course.providerRef?.providerName,
+    course.providerRef?.country,
+    course.providerRef?.region,
+    course.providerRef?.locality
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
 }
 
 export function validateCourse(course: Course): string[] {
@@ -17,6 +35,10 @@ export function validateCourse(course: Course): string[] {
 
   if (course.holes.length !== course.holeCount) {
     errors.push(`Course must contain exactly ${course.holeCount} holes.`);
+  }
+
+  if (!course.holes.every((hole, index) => hole.number === index + 1)) {
+    errors.push(`Holes must be numbered sequentially from 1 to ${course.holeCount}.`);
   }
 
   const seenStrokeIndexes = new Map<number, number>();

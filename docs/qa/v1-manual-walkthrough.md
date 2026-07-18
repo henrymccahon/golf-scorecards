@@ -21,6 +21,18 @@ Preview URL: https://henrymccahon.github.io/golf-scorecards/
 - [ ] Confirm the summary shows total score, par, score to par, played date, and hole scores.
 - [ ] Open history and confirm the completed round appears with score versus par.
 
+## Provided Course Flow
+
+- [ ] Search for `Augusta`.
+- [ ] Confirm `Augusta National` appears under provided courses.
+- [ ] Open `Augusta National`.
+- [ ] Confirm the course shows as an 18-hole scorecard from the demo provider.
+- [ ] Start a round.
+- [ ] Enter valid stroke values for every hole.
+- [ ] Finish the round.
+- [ ] Confirm history shows `Augusta National` and the total.
+- [ ] Reload the app and confirm `Augusta National` remains available locally.
+
 ## Custom Course Flow
 
 - [ ] Open Courses.

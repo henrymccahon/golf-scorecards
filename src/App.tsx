@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BottomNav, type AppTab } from './components/BottomNav';
 import { ActiveRound } from './components/ActiveRound';
 import { CourseDetail } from './components/CourseDetail';
@@ -7,13 +7,21 @@ import { CourseList } from './components/CourseList';
 import { RoundHistory } from './components/RoundHistory';
 import { RoundSummary } from './components/RoundSummary';
 import { seedCourses } from './data/seedCourses';
+import { validateCourse } from './domain/courses';
 import { completeRound, createRoundFromCourse, setHoleStrokes } from './domain/rounds';
 import type { Course, Round } from './domain/types';
+import { staticCourseProvider } from './providers/staticCourseProvider';
+import type { CourseProvider, CourseSearchResult } from './providers/types';
 import { createLocalScorecardStore } from './storage/localStore';
+import type { ProviderSearchStatus } from './components/CourseList';
 
 const storageErrorMessage = 'Scores cannot be saved on this device right now.';
 
-export function App() {
+interface AppProps {
+  courseProvider?: CourseProvider;
+}
+
+export function App({ courseProvider = staticCourseProvider }: AppProps) {
   const [store] = useState(() => createLocalScorecardStore(window.localStorage));
   const [initialState] = useState(() => {
     try {
@@ -29,6 +37,9 @@ export function App() {
   const [recoveryRequired, setRecoveryRequired] = useState(initialState.recoveryRequired);
   const [activeTab, setActiveTab] = useState<AppTab>('play');
   const [query, setQuery] = useState('');
+  const [providerResults, setProviderResults] = useState<CourseSearchResult[]>([]);
+  const [providerStatus, setProviderStatus] = useState<ProviderSearchStatus>('idle');
+  const [providerError, setProviderError] = useState('');
   const [selectedCourseId, setSelectedCourseId] = useState<string>();
   const [editingCourseId, setEditingCourseId] = useState<string>();
   const [activeRoundId, setActiveRoundId] = useState<string>();
@@ -40,6 +51,42 @@ export function App() {
   const inProgressRound = inProgressRounds[0];
   const activeRound = rounds.find((round) => round.id === activeRoundId);
   const summaryRound = rounds.find((round) => round.id === summaryRoundId);
+
+  useEffect(() => {
+    const text = query.trim();
+    let cancelled = false;
+
+    if (text.length < 3) {
+      setProviderResults([]);
+      setProviderStatus('idle');
+      setProviderError('');
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setProviderStatus('searching');
+    setProviderError('');
+    courseProvider.searchCourses({ text })
+      .then((results) => {
+        if (cancelled) return;
+        const savedProviderKeys = new Set(savedCourses
+          .map((course) => course.providerRef ? `${course.providerRef.providerId}:${course.providerRef.externalCourseId}` : undefined)
+          .filter(Boolean));
+        setProviderResults(results.filter((result) => !savedProviderKeys.has(`${result.providerId}:${result.externalCourseId}`)));
+        setProviderStatus('idle');
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setProviderResults([]);
+        setProviderStatus('error');
+        setProviderError('Provided course search is unavailable right now.');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [courseProvider, query, savedCourses]);
 
   function persist(nextCourses: Course[], nextRounds: Round[]): void {
     if (recoveryRequired) return;
@@ -163,6 +210,46 @@ export function App() {
     setActiveRoundId(undefined);
   }
 
+  async function selectProviderResult(result: CourseSearchResult): Promise<void> {
+    if (recoveryRequired) return;
+
+    const existingCourse = savedCourses.find((course) =>
+      course.providerRef?.providerId === result.providerId &&
+      course.providerRef.externalCourseId === result.externalCourseId
+    );
+
+    if (existingCourse) {
+      selectCourse(existingCourse.id);
+      return;
+    }
+
+    setProviderStatus('loading');
+    setProviderError('');
+
+    try {
+      const course = await courseProvider.loadCourse(result);
+      const validationErrors = validateCourse(course);
+      if (validationErrors.length > 0) {
+        setProviderStatus('error');
+        setProviderError('This provider scorecard is incomplete. Create a custom course instead.');
+        return;
+      }
+
+      const nextCourses = [...savedCourses, course];
+      setSavedCourses(nextCourses);
+      persist(nextCourses, rounds);
+      setSelectedCourseId(course.id);
+      setEditingCourseId(undefined);
+      setSummaryRoundId(undefined);
+      setActiveRoundId(undefined);
+      setProviderResults([]);
+      setProviderStatus('idle');
+    } catch {
+      setProviderStatus('error');
+      setProviderError('Provided course search is unavailable right now.');
+    }
+  }
+
   function resetSavedData(): void {
     try {
       store.reset();
@@ -193,10 +280,19 @@ export function App() {
       {!activeRound && !summaryRound && editingCourseId ? <CourseForm course={editingCourse} hasPriorRounds={editingCourse !== undefined && rounds.some((round) => round.courseId === editingCourse.id || round.courseSnapshot.id === editingCourse.id)} onSave={saveCustomCourse} onCancel={() => showCourseList('courses')} /> : null}
       {!activeRound && !summaryRound && !editingCourseId && selectedCourse ? <CourseDetail course={selectedCourse} onBack={() => setSelectedCourseId(undefined)} onStartRound={startRound} onEditCourse={editCourse} /> : null}
       {!activeRound && !summaryRound && !editingCourseId && !selectedCourse && activeTab !== 'history' ? (
-        <>
-          {activeTab === 'courses' ? <button className="primary-button" onClick={createCourse}>Create course</button> : null}
-          <CourseList courses={courses} query={query} inProgressRounds={inProgressRounds} onQueryChange={setQuery} onSelectCourse={selectCourse} onResumeRound={resumeRound} />
-        </>
+        <CourseList
+          courses={courses}
+          query={query}
+          inProgressRounds={inProgressRounds}
+          providerResults={providerResults}
+          providerStatus={providerStatus}
+          providerError={providerError}
+          onQueryChange={setQuery}
+          onSelectCourse={selectCourse}
+          onResumeRound={resumeRound}
+          onSelectProviderResult={selectProviderResult}
+          onCreateCourse={createCourse}
+        />
       ) : null}
       {!activeRound && !summaryRound && !editingCourseId && !selectedCourse && activeTab === 'history' ? <RoundHistory rounds={rounds} onOpenRound={openCompletedRound} /> : null}
       <BottomNav activeTab={activeTab} onSelect={showCourseList} />

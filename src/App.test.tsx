@@ -21,7 +21,7 @@ describe('App course flows', () => {
 
     try {
       await userEvent.click(screen.getByRole('button', { name: 'Courses' }));
-      await userEvent.click(screen.getByRole('button', { name: 'Create course' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Create a custom course' }));
       await userEvent.type(screen.getByLabelText('Course name'), 'Saturday Nine');
 
       for (let hole = 1; hole <= 9; hole += 1) {
@@ -42,7 +42,7 @@ describe('App course flows', () => {
     renderApp(<App />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Courses' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Create course' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create a custom course' }));
     await userEvent.click(screen.getByRole('button', { name: 'Save course' }));
 
     expect(screen.getByText('Course name is required.')).toBeInTheDocument();
@@ -53,7 +53,7 @@ describe('App course flows', () => {
     const firstRender = renderApp(<App />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Courses' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Create course' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create a custom course' }));
     await userEvent.type(screen.getByLabelText('Course name'), 'Saturday Nine');
     await userEvent.click(screen.getByRole('button', { name: 'Save course' }));
 
@@ -67,7 +67,7 @@ describe('App course flows', () => {
     renderApp(<App />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Courses' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Create course' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create a custom course' }));
     await userEvent.type(screen.getByLabelText('Course name'), 'Saturday Nine');
     await userEvent.click(screen.getByRole('button', { name: 'Save course' }));
 
@@ -133,7 +133,7 @@ describe('App course flows', () => {
     renderApp(<App />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Courses' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Create course' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create a custom course' }));
     await userEvent.type(screen.getByLabelText('Course name'), 'Saturday Nine');
     await userEvent.click(screen.getByRole('button', { name: 'Save course' }));
     await userEvent.click(screen.getByText('Saturday Nine'));
@@ -168,7 +168,7 @@ describe('App course flows', () => {
 
     renderAppWithExistingStorage(<App />);
     await userEvent.click(screen.getByRole('button', { name: 'Courses' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Create course' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create a custom course' }));
 
     expect(screen.queryByText(/Historical scorecards keep their original hole data/)).not.toBeInTheDocument();
   });
@@ -187,5 +187,72 @@ describe('App course flows', () => {
 
     await userEvent.type(screen.getByLabelText('Search courses'), 'Legacy');
     expect(screen.getByText('Legacy Local Nine')).toBeInTheDocument();
+  });
+
+  it('searches provided courses, saves one locally, and starts a round from it', async () => {
+    renderApp(<App />);
+
+    await userEvent.type(screen.getByLabelText('Search courses'), 'Augusta');
+    await screen.findByLabelText('Provided courses');
+    await userEvent.click(screen.getByRole('button', { name: /Augusta National/ }));
+
+    expect(await screen.findByRole('heading', { name: 'Augusta National' })).toBeInTheDocument();
+    expect(screen.getByText(/Static Demo Provider/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Start round' }));
+    expect(screen.getByLabelText('Hole 18 strokes')).toBeInTheDocument();
+
+    const stored = JSON.parse(localStorage.getItem('golf-scorecard-v1') ?? '{}');
+    expect(stored.savedCourses[0]).toMatchObject({
+      name: 'Augusta National',
+      source: 'imported',
+      providerRef: {
+        providerId: 'static-demo',
+        externalCourseId: 'augusta-national'
+      }
+    });
+  });
+
+  it('keeps custom course creation available as the course fallback', async () => {
+    renderApp(<App />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Courses' }));
+    expect(screen.getByText("Can't find it?")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Create a custom course' }));
+
+    expect(screen.getByRole('heading', { name: 'Create course' })).toBeInTheDocument();
+  });
+
+  it('shows a non-blocking provider error when search fails', async () => {
+    const failingProvider = {
+      id: 'failing-provider',
+      name: 'Failing Provider',
+      async searchCourses() {
+        throw new Error('network unavailable');
+      },
+      async loadCourse() {
+        throw new Error('network unavailable');
+      }
+    };
+
+    renderApp(<App courseProvider={failingProvider} />);
+
+    await userEvent.type(screen.getByLabelText('Search courses'), 'Augusta');
+
+    expect(await screen.findByText('Provided course search is unavailable right now.')).toBeInTheDocument();
+    expect(screen.getByText("Can't find it?")).toBeInTheDocument();
+  });
+
+  it('does not duplicate provider courses that are already saved locally', async () => {
+    renderApp(<App />);
+
+    await userEvent.type(screen.getByLabelText('Search courses'), 'Augusta');
+    await userEvent.click(await screen.findByRole('button', { name: /Augusta National/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await userEvent.clear(screen.getByLabelText('Search courses'));
+    await userEvent.type(screen.getByLabelText('Search courses'), 'Augusta');
+
+    expect(screen.getByText('Augusta National')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Provided courses')).not.toBeInTheDocument();
   });
 });

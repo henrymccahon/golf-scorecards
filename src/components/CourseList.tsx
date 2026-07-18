@@ -1,22 +1,35 @@
 import { calculateCoursePar, getCourseSearchText } from '../domain/courses';
 import type { Course, Round } from '../domain/types';
+import type { CourseSearchResult } from '../providers/types';
+
+export type ProviderSearchStatus = 'idle' | 'searching' | 'loading' | 'error';
 
 interface CourseListProps {
   courses: Course[];
   query: string;
   inProgressRounds: Round[];
+  providerResults?: CourseSearchResult[];
+  providerStatus?: ProviderSearchStatus;
+  providerError?: string;
   onQueryChange(query: string): void;
   onSelectCourse(courseId: string): void;
   onResumeRound(roundId: string): void;
+  onSelectProviderResult?(result: CourseSearchResult): void;
+  onCreateCourse?(): void;
 }
 
 export function CourseList({
   courses,
   query,
   inProgressRounds,
+  providerResults = [],
+  providerStatus = 'idle',
+  providerError,
   onQueryChange,
   onSelectCourse,
-  onResumeRound
+  onResumeRound,
+  onSelectProviderResult,
+  onCreateCourse
 }: CourseListProps) {
   const filteredCourses = courses.filter((course) =>
     getCourseSearchText(course).includes(query.trim().toLowerCase())
@@ -49,6 +62,36 @@ export function CourseList({
           </button>
         ))}
       </div>
+      {providerStatus === 'searching' ? <p className="provider-status">Searching provided courses...</p> : null}
+      {providerError ? <p className="error-list" role="alert">{providerError}</p> : null}
+      {providerResults.length > 0 ? (
+        <section className="provider-results" aria-label="Provided courses">
+          <h2>Provided courses</h2>
+          <div className="course-list">
+            {providerResults.map((result) => (
+              <button
+                key={`${result.providerId}:${result.externalCourseId}`}
+                className="course-row provider-row"
+                onClick={() => onSelectProviderResult?.(result)}
+              >
+                <span>
+                  <strong>{result.name}</strong>
+                  <small>
+                    {[result.locality, result.region, result.country].filter(Boolean).join(', ') || 'Provided course'}
+                    {result.holeCount ? ` · ${result.holeCount} holes` : ''}
+                  </small>
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
+      {onCreateCourse ? (
+        <div className="custom-fallback">
+          <span>Can't find it?</span>
+          <button className="secondary-button" onClick={onCreateCourse}>Create a custom course</button>
+        </div>
+      ) : null}
     </section>
   );
 }

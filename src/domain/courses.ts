@@ -4,6 +4,13 @@ export function calculateCoursePar(course: Course): number {
   return course.holes.reduce((total, hole) => total + hole.par, 0);
 }
 
+export function getCourseSourceLabel(course: Course): string {
+  if (course.providerRef) {
+    return course.providerRef.providerName;
+  }
+  return course.source;
+}
+
 export function getCourseSearchText(course: Course): string {
   return [
     course.name,

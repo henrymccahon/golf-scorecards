@@ -229,6 +229,37 @@ p {
   font-weight: 800;
 }
 
+.provider-results {
+  display: grid;
+  gap: 10px;
+}
+
+.provider-results h2 {
+  font-size: 1rem;
+  margin: 4px 0 0;
+}
+
+.provider-row small {
+  color: #52675f;
+}
+
+.provider-status {
+  color: #52675f;
+  margin: 0;
+}
+
+.custom-fallback {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid #d8d0bf;
+  padding-top: 12px;
+}
+
+.custom-fallback span {
+  color: #64736c;
+  font-weight: 700;
+}
+
 @media (max-width: 380px) {
   .app-shell {
     padding-left: 12px;

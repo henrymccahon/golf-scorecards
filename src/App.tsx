@@ -20,10 +20,10 @@ export function App() {
       const loaded = store.load();
       return { ...loaded, storageError: '' };
     } catch {
-      return { data: { customCourses: [], rounds: [] }, recoveryRequired: false, storageError: storageErrorMessage };
+      return { data: { savedCourses: [], rounds: [] }, recoveryRequired: false, storageError: storageErrorMessage };
     }
   });
-  const [customCourses, setCustomCourses] = useState(initialState.data.customCourses);
+  const [savedCourses, setSavedCourses] = useState(initialState.data.savedCourses);
   const [rounds, setRounds] = useState<Round[]>(initialState.data.rounds);
   const [storageError, setStorageError] = useState(initialState.storageError);
   const [recoveryRequired, setRecoveryRequired] = useState(initialState.recoveryRequired);
@@ -33,9 +33,9 @@ export function App() {
   const [editingCourseId, setEditingCourseId] = useState<string>();
   const [activeRoundId, setActiveRoundId] = useState<string>();
   const [summaryRoundId, setSummaryRoundId] = useState<string>();
-  const courses = [...seedCourses, ...customCourses];
+  const courses = [...seedCourses, ...savedCourses];
   const selectedCourse = courses.find((course) => course.id === selectedCourseId);
-  const editingCourse = customCourses.find((course) => course.id === editingCourseId);
+  const editingCourse = savedCourses.find((course) => course.id === editingCourseId && course.source === 'custom');
   const inProgressRounds = rounds.filter((round) => round.status === 'in_progress');
   const inProgressRound = inProgressRounds[0];
   const activeRound = rounds.find((round) => round.id === activeRoundId);
@@ -44,7 +44,7 @@ export function App() {
   function persist(nextCourses: Course[], nextRounds: Round[]): void {
     if (recoveryRequired) return;
     try {
-      store.save({ customCourses: nextCourses, rounds: nextRounds });
+      store.save({ savedCourses: nextCourses, rounds: nextRounds });
       setStorageError('');
     } catch {
       setStorageError(storageErrorMessage);
@@ -53,11 +53,11 @@ export function App() {
 
   function saveCustomCourse(course: Course): void {
     if (recoveryRequired) return;
-    const nextCourses = customCourses.some((existingCourse) => existingCourse.id === course.id)
-      ? customCourses.map((existingCourse) => existingCourse.id === course.id ? course : existingCourse)
-      : [...customCourses, course];
+    const nextCourses = savedCourses.some((existingCourse) => existingCourse.id === course.id)
+      ? savedCourses.map((existingCourse) => existingCourse.id === course.id ? course : existingCourse)
+      : [...savedCourses, course];
 
-    setCustomCourses(nextCourses);
+    setSavedCourses(nextCourses);
     persist(nextCourses, rounds);
     setEditingCourseId(undefined);
     setSelectedCourseId(undefined);
@@ -103,7 +103,7 @@ export function App() {
     const nextRounds = [...rounds, round];
 
     setRounds(nextRounds);
-    persist(customCourses, nextRounds);
+    persist(savedCourses, nextRounds);
     setSelectedCourseId(undefined);
     setActiveRoundId(round.id);
     setSummaryRoundId(undefined);
@@ -126,7 +126,7 @@ export function App() {
 
     if (!changed) return;
     setRounds(nextRounds);
-    persist(customCourses, nextRounds);
+    persist(savedCourses, nextRounds);
   }
 
   function finishRound(roundId: string): void {
@@ -145,7 +145,7 @@ export function App() {
 
     if (!completedRound) return;
     setRounds(nextRounds);
-    persist(customCourses, nextRounds);
+    persist(savedCourses, nextRounds);
     setActiveRoundId(undefined);
     setSummaryRoundId(completedRound.id);
   }
@@ -166,7 +166,7 @@ export function App() {
   function resetSavedData(): void {
     try {
       store.reset();
-      setCustomCourses([]);
+      setSavedCourses([]);
       setRounds([]);
       setRecoveryRequired(false);
       setStorageError('');

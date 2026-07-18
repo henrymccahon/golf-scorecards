@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { seedCourses } from './data/seedCourses';
 import { createRoundFromCourse } from './domain/rounds';
+import type { Course } from './domain/types';
 import { renderApp, renderAppWithExistingStorage } from './test/render';
 
 describe('App course flows', () => {
@@ -148,7 +149,7 @@ describe('App course flows', () => {
   it('exposes every persisted in-progress round for resuming', async () => {
     const firstRound = createRoundFromCourse(seedCourses[0], { id: 'round-1', startedAt: '2026-07-17T01:00:00.000Z' });
     const secondRound = createRoundFromCourse(seedCourses[1], { id: 'round-2', startedAt: '2026-07-17T02:00:00.000Z' });
-    localStorage.setItem('golf-scorecard-v1', JSON.stringify({ customCourses: [], rounds: [firstRound, secondRound] }));
+    localStorage.setItem('golf-scorecard-v1', JSON.stringify({ savedCourses: [], rounds: [firstRound, secondRound] }));
 
     renderAppWithExistingStorage(<App />);
 
@@ -163,12 +164,28 @@ describe('App course flows', () => {
   it('does not warn when creating a course after loading a round without courseId', async () => {
     const roundWithoutCourseId = createRoundFromCourse(seedCourses[0], { id: 'round-1', startedAt: '2026-07-17T01:00:00.000Z' });
     delete roundWithoutCourseId.courseId;
-    localStorage.setItem('golf-scorecard-v1', JSON.stringify({ customCourses: [], rounds: [roundWithoutCourseId] }));
+    localStorage.setItem('golf-scorecard-v1', JSON.stringify({ savedCourses: [], rounds: [roundWithoutCourseId] }));
 
     renderAppWithExistingStorage(<App />);
     await userEvent.click(screen.getByRole('button', { name: 'Courses' }));
     await userEvent.click(screen.getByRole('button', { name: 'Create course' }));
 
     expect(screen.queryByText(/Historical scorecards keep their original hole data/)).not.toBeInTheDocument();
+  });
+
+  it('loads legacy custom courses after storage migration', async () => {
+    const legacyCourse: Course = {
+      id: 'custom-legacy',
+      name: 'Legacy Local Nine',
+      source: 'custom',
+      holeCount: 9,
+      holes: Array.from({ length: 9 }, (_, index) => ({ number: index + 1, par: 4 }))
+    };
+    localStorage.setItem('golf-scorecard-v1', JSON.stringify({ customCourses: [legacyCourse], rounds: [] }));
+
+    renderAppWithExistingStorage(<App />);
+
+    await userEvent.type(screen.getByLabelText('Search courses'), 'Legacy');
+    expect(screen.getByText('Legacy Local Nine')).toBeInTheDocument();
   });
 });

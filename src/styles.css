@@ -345,7 +345,7 @@ p {
   opacity: 0.55;
 }
 
-@media (min-width: 460px) {
+@media (min-width: 480px) {
   .hole-navigator {
     grid-template-columns: repeat(9, minmax(0, 1fr));
   }

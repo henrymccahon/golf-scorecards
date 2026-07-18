@@ -10,17 +10,6 @@ Preview URL: https://henrymccahon.github.io/golf-scorecards/
 - [ ] Open on a narrow mobile width, around 320-390px.
 - [ ] Confirm the app loads without broken icons, blank screens, or missing styles.
 
-## Seeded Course Flow
-
-- [ ] Search for `Lakeview`.
-- [ ] Open `Lakeview Nine`.
-- [ ] Start a round.
-- [ ] Enter valid stroke values for every hole.
-- [ ] Confirm the finish button is usable and not hidden by bottom navigation.
-- [ ] Finish the round.
-- [ ] Confirm the summary shows total score, par, score to par, played date, and hole scores.
-- [ ] Open history and confirm the completed round appears with score versus par.
-
 ## Provided Course Flow
 
 - [ ] Search for `Augusta`.
@@ -32,6 +21,17 @@ Preview URL: https://henrymccahon.github.io/golf-scorecards/
 - [ ] Finish the round.
 - [ ] Confirm history shows `Augusta National` and the total.
 - [ ] Reload the app and confirm `Augusta National` remains available locally.
+
+## Seeded Course Flow
+
+- [ ] Search for `Lakeview`.
+- [ ] Open `Lakeview Nine`.
+- [ ] Start a round.
+- [ ] Enter valid stroke values for every hole.
+- [ ] Confirm the finish button is usable and not hidden by bottom navigation.
+- [ ] Finish the round.
+- [ ] Confirm the summary shows total score, par, score to par, played date, and hole scores.
+- [ ] Open history and confirm the completed round appears with score versus par.
 
 ## Custom Course Flow
 

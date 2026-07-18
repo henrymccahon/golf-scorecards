@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BottomNav, type AppTab } from './components/BottomNav';
 import { ActiveRound } from './components/ActiveRound';
 import { CourseDetail } from './components/CourseDetail';
@@ -32,6 +32,7 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
     }
   });
   const [savedCourses, setSavedCourses] = useState(initialState.data.savedCourses);
+  const savedCoursesRef = useRef(initialState.data.savedCourses);
   const [rounds, setRounds] = useState<Round[]>(initialState.data.rounds);
   const [storageError, setStorageError] = useState(initialState.storageError);
   const [recoveryRequired, setRecoveryRequired] = useState(initialState.recoveryRequired);
@@ -40,6 +41,7 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
   const [providerResults, setProviderResults] = useState<CourseSearchResult[]>([]);
   const [providerStatus, setProviderStatus] = useState<ProviderSearchStatus>('idle');
   const [providerError, setProviderError] = useState('');
+  const providerLoadRequestRef = useRef(0);
   const [selectedCourseId, setSelectedCourseId] = useState<string>();
   const [editingCourseId, setEditingCourseId] = useState<string>();
   const [activeRoundId, setActiveRoundId] = useState<string>();
@@ -51,6 +53,10 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
   const inProgressRound = inProgressRounds[0];
   const activeRound = rounds.find((round) => round.id === activeRoundId);
   const summaryRound = rounds.find((round) => round.id === summaryRoundId);
+
+  useEffect(() => {
+    providerLoadRequestRef.current += 1;
+  }, [query]);
 
   useEffect(() => {
     const text = query.trim();
@@ -104,6 +110,7 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
       ? savedCourses.map((existingCourse) => existingCourse.id === course.id ? course : existingCourse)
       : [...savedCourses, course];
 
+    savedCoursesRef.current = nextCourses;
     setSavedCourses(nextCourses);
     persist(nextCourses, rounds);
     setEditingCourseId(undefined);
@@ -124,6 +131,11 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
   function createCourse(): void {
     setEditingCourseId('new');
     setSelectedCourseId(undefined);
+  }
+
+  function changeQuery(nextQuery: string): void {
+    providerLoadRequestRef.current += 1;
+    setQuery(nextQuery);
   }
 
   function showCourseList(tab: AppTab = activeTab): void {
@@ -213,7 +225,7 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
   async function selectProviderResult(result: CourseSearchResult): Promise<void> {
     if (recoveryRequired) return;
 
-    const existingCourse = savedCourses.find((course) =>
+    const existingCourse = savedCoursesRef.current.find((course) =>
       course.providerRef?.providerId === result.providerId &&
       course.providerRef.externalCourseId === result.externalCourseId
     );
@@ -225,9 +237,12 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
 
     setProviderStatus('loading');
     setProviderError('');
+    const requestId = ++providerLoadRequestRef.current;
 
     try {
       const course = await courseProvider.loadCourse(result);
+      if (requestId !== providerLoadRequestRef.current) return;
+
       const validationErrors = validateCourse(course);
       if (validationErrors.length > 0) {
         setProviderStatus('error');
@@ -235,7 +250,13 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
         return;
       }
 
-      const nextCourses = [...savedCourses, course];
+      const currentCourses = savedCoursesRef.current;
+      const duplicateCourse = currentCourses.find((existing) =>
+        existing.providerRef?.providerId === result.providerId &&
+        existing.providerRef.externalCourseId === result.externalCourseId
+      );
+      const nextCourses = duplicateCourse ? currentCourses : [...currentCourses, course];
+      savedCoursesRef.current = nextCourses;
       setSavedCourses(nextCourses);
       persist(nextCourses, rounds);
       setSelectedCourseId(course.id);
@@ -245,6 +266,7 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
       setProviderResults([]);
       setProviderStatus('idle');
     } catch {
+      if (requestId !== providerLoadRequestRef.current) return;
       setProviderStatus('error');
       setProviderError('Provided course search is unavailable right now.');
     }
@@ -253,6 +275,7 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
   function resetSavedData(): void {
     try {
       store.reset();
+      savedCoursesRef.current = [];
       setSavedCourses([]);
       setRounds([]);
       setRecoveryRequired(false);
@@ -287,7 +310,7 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
           providerResults={providerResults}
           providerStatus={providerStatus}
           providerError={providerError}
-          onQueryChange={setQuery}
+          onQueryChange={changeQuery}
           onSelectCourse={selectCourse}
           onResumeRound={resumeRound}
           onSelectProviderResult={selectProviderResult}

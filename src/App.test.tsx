@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { App } from './App';
@@ -6,6 +6,32 @@ import { seedCourses } from './data/seedCourses';
 import { createRoundFromCourse } from './domain/rounds';
 import type { Course } from './domain/types';
 import { renderApp, renderAppWithExistingStorage } from './test/render';
+
+function deferred<T>() {
+  let resolve: (value: T) => void;
+  let reject: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve: resolve!, reject: reject! };
+}
+
+function providerCourse(externalCourseId: string, name: string): Course {
+  return {
+    id: `provided-test-provider-${externalCourseId}`,
+    name,
+    source: 'imported',
+    holeCount: 9,
+    holes: Array.from({ length: 9 }, (_, index) => ({ number: index + 1, par: 4 })),
+    providerRef: {
+      providerId: 'test-provider',
+      externalCourseId,
+      providerName: 'Test Provider',
+      lastFetchedAt: '2026-07-18T00:00:00.000Z'
+    }
+  };
+}
 
 describe('App course flows', () => {
   it('searches seeded courses', async () => {
@@ -254,5 +280,56 @@ describe('App course flows', () => {
 
     expect(screen.getByText('Augusta National')).toBeInTheDocument();
     expect(screen.queryByLabelText('Provided courses')).not.toBeInTheDocument();
+  });
+
+  it('ignores an out-of-order provider load after a newer selection completes', async () => {
+    const firstLoad = deferred<Course>();
+    const secondLoad = deferred<Course>();
+    const firstResult = { providerId: 'test-provider', externalCourseId: 'first', name: 'First Course', hasScorecard: true };
+    const secondResult = { providerId: 'test-provider', externalCourseId: 'second', name: 'Second Course', hasScorecard: true };
+    const provider = {
+      id: 'test-provider',
+      name: 'Test Provider',
+      searchCourses: async () => [firstResult, secondResult],
+      loadCourse: (result: typeof firstResult) => result.externalCourseId === 'first' ? firstLoad.promise : secondLoad.promise
+    };
+
+    renderApp(<App courseProvider={provider} />);
+    await userEvent.type(screen.getByLabelText('Search courses'), 'Course');
+    await screen.findByLabelText('Provided courses');
+    await userEvent.click(screen.getByRole('button', { name: /First Course/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Second Course/ }));
+
+    secondLoad.resolve(providerCourse('second', 'Second Course'));
+    expect(await screen.findByRole('heading', { name: 'Second Course' })).toBeInTheDocument();
+
+    firstLoad.resolve(providerCourse('first', 'First Course'));
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'First Course' })).not.toBeInTheDocument());
+
+    const stored = JSON.parse(localStorage.getItem('golf-scorecard-v1') ?? '{}');
+    expect(stored.savedCourses).toEqual([expect.objectContaining({ id: 'provided-test-provider-second' })]);
+  });
+
+  it('ignores a provider load when the search query changes', async () => {
+    const pendingLoad = deferred<Course>();
+    const oldResult = { providerId: 'test-provider', externalCourseId: 'old', name: 'Old Course', hasScorecard: true };
+    const provider = {
+      id: 'test-provider',
+      name: 'Test Provider',
+      searchCourses: async ({ text }: { text: string }) => text === 'Old' ? [oldResult] : [],
+      loadCourse: () => pendingLoad.promise
+    };
+
+    renderApp(<App courseProvider={provider} />);
+    await userEvent.type(screen.getByLabelText('Search courses'), 'Old');
+    await userEvent.click(await screen.findByRole('button', { name: /Old Course/ }));
+    await userEvent.clear(screen.getByLabelText('Search courses'));
+    await userEvent.type(screen.getByLabelText('Search courses'), 'New');
+
+    pendingLoad.resolve(providerCourse('old', 'Old Course'));
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Old Course' })).not.toBeInTheDocument());
+
+    const stored = JSON.parse(localStorage.getItem('golf-scorecard-v1') ?? '{}');
+    expect(stored.savedCourses).toEqual([]);
   });
 });

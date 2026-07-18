@@ -33,6 +33,18 @@ function providerCourse(externalCourseId: string, name: string): Course {
   };
 }
 
+async function scoreVisibleRound(holeCount: number, strokesPerHole: number): Promise<void> {
+  for (let hole = 1; hole <= holeCount; hole += 1) {
+    for (let stroke = 0; stroke < strokesPerHole; stroke += 1) {
+      await userEvent.click(screen.getByRole('button', { name: `Increase hole ${hole} strokes` }));
+    }
+    if (hole < holeCount) {
+      await userEvent.click(screen.getByRole('button', { name: 'Next hole' }));
+    }
+  }
+  await userEvent.click(screen.getByRole('button', { name: 'Review scorecard' }));
+}
+
 describe('App course flows', () => {
   it('searches seeded courses', async () => {
     renderApp(<App />);
@@ -114,11 +126,7 @@ describe('App course flows', () => {
     await userEvent.click(screen.getByText('Lakeview Nine'));
     await userEvent.click(screen.getByRole('button', { name: 'Start round' }));
 
-    for (let hole = 1; hole <= 9; hole += 1) {
-      await userEvent.clear(screen.getByLabelText(`Hole ${hole} strokes`));
-      await userEvent.type(screen.getByLabelText(`Hole ${hole} strokes`), '4');
-    }
-
+    await scoreVisibleRound(9, 4);
     await userEvent.click(screen.getByRole('button', { name: 'Finish round' }));
     expect(screen.getByText('Total 36')).toBeInTheDocument();
 
@@ -132,14 +140,15 @@ describe('App course flows', () => {
 
     await userEvent.click(screen.getByText('Lakeview Nine'));
     await userEvent.click(screen.getByRole('button', { name: 'Start round' }));
-    await userEvent.clear(screen.getByLabelText('Hole 1 strokes'));
-    await userEvent.type(screen.getByLabelText('Hole 1 strokes'), '5');
+    for (let stroke = 0; stroke < 5; stroke += 1) {
+      await userEvent.click(screen.getByRole('button', { name: 'Increase hole 1 strokes' }));
+    }
 
     firstRender.unmount();
     renderAppWithExistingStorage(<App />);
 
     await userEvent.click(screen.getByRole('button', { name: /Resume Lakeview Nine/ }));
-    expect(screen.getByLabelText('Hole 1 strokes')).toHaveValue(5);
+    expect(screen.getByLabelText('Hole 1 displayed score')).toHaveTextContent('5');
   });
 
   it('routes a new start request to the existing in-progress round', async () => {
@@ -152,7 +161,8 @@ describe('App course flows', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Start round' }));
 
     expect(screen.getByRole('heading', { name: 'Lakeview Nine' })).toBeInTheDocument();
-    expect(screen.queryByLabelText('Hole 18 strokes')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Hole 1' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Hole 18,/ })).not.toBeInTheDocument();
   });
 
   it('warns before editing a course that is referenced by a round', async () => {
@@ -184,7 +194,8 @@ describe('App course flows', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Resume Parklands Championship' }));
 
     expect(screen.getByRole('heading', { name: 'Parklands Championship' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Hole 18 strokes')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Hole 1' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Hole 18, unplayed/ })).toBeInTheDocument();
   });
 
   it('does not warn when creating a course after loading a round without courseId', async () => {
@@ -226,7 +237,7 @@ describe('App course flows', () => {
     expect(screen.getByText(/Static Demo Provider/)).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Start round' }));
-    expect(screen.getByLabelText('Hole 18 strokes')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Hole 18, unplayed/ })).toBeInTheDocument();
 
     const stored = JSON.parse(localStorage.getItem('golf-scorecard-v1') ?? '{}');
     expect(stored.savedCourses[0]).toMatchObject({
@@ -396,15 +407,16 @@ describe('App course flows', () => {
     await userEvent.type(screen.getByLabelText('Search courses'), 'Pending');
     await userEvent.click(await screen.findByRole('button', { name: /Pending Course/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Resume Lakeview Nine' }));
-    await userEvent.clear(screen.getByLabelText('Hole 1 strokes'));
-    await userEvent.type(screen.getByLabelText('Hole 1 strokes'), '5');
+    for (let stroke = 0; stroke < 5; stroke += 1) {
+      await userEvent.click(screen.getByRole('button', { name: 'Increase hole 1 strokes' }));
+    }
 
     await act(async () => {
       pendingLoad.resolve(providerCourse('pending', 'Pending Course'));
     });
 
     expect(screen.getByRole('heading', { name: 'Lakeview Nine' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Hole 1 strokes')).toHaveValue(5);
+    expect(screen.getByLabelText('Hole 1 displayed score')).toHaveTextContent('5');
     expect(screen.queryByRole('heading', { name: 'Pending Course' })).not.toBeInTheDocument();
 
     const stored = JSON.parse(localStorage.getItem('golf-scorecard-v1') ?? '{}');

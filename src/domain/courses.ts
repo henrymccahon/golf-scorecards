@@ -37,6 +37,10 @@ export function validateCourse(course: Course): string[] {
     errors.push(`Course must contain exactly ${course.holeCount} holes.`);
   }
 
+  if (!course.holes.every((hole, index) => hole.number === index + 1)) {
+    errors.push(`Holes must be numbered sequentially from 1 to ${course.holeCount}.`);
+  }
+
   const seenStrokeIndexes = new Map<number, number>();
 
   for (const hole of course.holes) {

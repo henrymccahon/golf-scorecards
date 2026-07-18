@@ -1,3 +1,4 @@
+import { validateCourse } from '../domain/courses';
 import type { Course, Round } from '../domain/types';
 
 export interface ScorecardData {
@@ -101,9 +102,14 @@ function parseStoredData(raw: string): ScorecardData | undefined {
     if (!savedCourses.every((course) => isCourse(course, ['custom', 'imported']))) return undefined;
     if (!parsed.rounds.every(isRound)) return undefined;
 
+    const validatedCourses = savedCourses as Course[];
+    const validatedRounds = parsed.rounds as Round[];
+    if (!validatedCourses.every((course) => validateCourse(course).length === 0)) return undefined;
+    if (!validatedRounds.every((round) => validateCourse(round.courseSnapshot).length === 0)) return undefined;
+
     return {
-      savedCourses: savedCourses as Course[],
-      rounds: parsed.rounds as Round[]
+      savedCourses: validatedCourses,
+      rounds: validatedRounds
     };
   } catch {
     return undefined;

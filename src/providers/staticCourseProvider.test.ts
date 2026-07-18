@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { createProviderCourseId } from './providerCourseMapper';
 import { staticCourseProvider } from './staticCourseProvider';
 
 describe('static course provider', () => {
@@ -28,7 +29,7 @@ describe('static course provider', () => {
     const course = await staticCourseProvider.loadCourse(result);
 
     expect(course).toMatchObject({
-      id: 'provided-static-demo-augusta-national',
+      id: createProviderCourseId('static-demo', 'augusta-national'),
       name: 'Augusta National',
       source: 'imported',
       holeCount: 18,

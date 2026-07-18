@@ -28,8 +28,14 @@ const validRecord: ProviderCourseRecord = {
 
 describe('provider course mapper', () => {
   it('creates stable local ids from provider identity', () => {
-    expect(createProviderCourseId('Demo Provider', 'Augusta National #1')).toBe(
-      'provided-demo-provider-augusta-national-1'
+    expect(createProviderCourseId('Demo Provider', 'Augusta National #1')).toMatch(
+      /^provided-demo-provider-augusta-national-1-[a-z0-9]+$/
+    );
+  });
+
+  it('creates distinct local ids for raw provider identities that share a slug', () => {
+    expect(createProviderCourseId('provider', 'course/a')).not.toBe(
+      createProviderCourseId('provider', 'course-a')
     );
   });
 
@@ -38,7 +44,7 @@ describe('provider course mapper', () => {
 
     expect(result.errors).toEqual([]);
     expect(result.course).toMatchObject({
-      id: 'provided-demo-augusta-national',
+      id: createProviderCourseId('demo', 'augusta-national'),
       name: 'Augusta National',
       source: 'imported',
       holeCount: 9,
@@ -80,5 +86,16 @@ describe('provider course mapper', () => {
 
     expect(result.course).toBeUndefined();
     expect(result.errors).toContain('Hole 1 must have a positive par value.');
+  });
+
+  it.each([
+    ['duplicate', validRecord.holes.map((hole, index) => index === 8 ? { ...hole, number: 8 } : hole)],
+    ['skipped', validRecord.holes.map((hole, index) => index === 4 ? { ...hole, number: 6 } : hole)],
+    ['out-of-order', [validRecord.holes[1], validRecord.holes[0], ...validRecord.holes.slice(2)]]
+  ])('rejects %s provider hole numbers', (_description, holes) => {
+    const result = mapProviderCourseToCourse({ ...validRecord, holes }, fetchedAt);
+
+    expect(result.course).toBeUndefined();
+    expect(result.errors).toContain('Holes must be numbered sequentially from 1 to 9.');
   });
 });

@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { App } from './App';
@@ -300,10 +300,14 @@ describe('App course flows', () => {
     await userEvent.click(screen.getByRole('button', { name: /First Course/ }));
     await userEvent.click(screen.getByRole('button', { name: /Second Course/ }));
 
-    secondLoad.resolve(providerCourse('second', 'Second Course'));
+    await act(async () => {
+      secondLoad.resolve(providerCourse('second', 'Second Course'));
+    });
     expect(await screen.findByRole('heading', { name: 'Second Course' })).toBeInTheDocument();
 
-    firstLoad.resolve(providerCourse('first', 'First Course'));
+    await act(async () => {
+      firstLoad.resolve(providerCourse('first', 'First Course'));
+    });
     await waitFor(() => expect(screen.queryByRole('heading', { name: 'First Course' })).not.toBeInTheDocument());
 
     const stored = JSON.parse(localStorage.getItem('golf-scorecard-v1') ?? '{}');
@@ -326,10 +330,52 @@ describe('App course flows', () => {
     await userEvent.clear(screen.getByLabelText('Search courses'));
     await userEvent.type(screen.getByLabelText('Search courses'), 'New');
 
-    pendingLoad.resolve(providerCourse('old', 'Old Course'));
+    await act(async () => {
+      pendingLoad.resolve(providerCourse('old', 'Old Course'));
+    });
     await waitFor(() => expect(screen.queryByRole('heading', { name: 'Old Course' })).not.toBeInTheDocument());
 
     const stored = JSON.parse(localStorage.getItem('golf-scorecard-v1') ?? '{}');
     expect(stored.savedCourses).toEqual([]);
+  });
+
+  it('preserves an edited resumed round when a pending provider load resolves', async () => {
+    const pendingLoad = deferred<Course>();
+    const pendingResult = {
+      providerId: 'test-provider',
+      externalCourseId: 'pending',
+      name: 'Pending Course',
+      hasScorecard: true
+    };
+    const provider = {
+      id: 'test-provider',
+      name: 'Test Provider',
+      searchCourses: async () => [pendingResult],
+      loadCourse: () => pendingLoad.promise
+    };
+    const existingRound = createRoundFromCourse(seedCourses[0], {
+      id: 'round-1',
+      startedAt: '2026-07-18T01:00:00.000Z'
+    });
+    localStorage.setItem('golf-scorecard-v1', JSON.stringify({ savedCourses: [], rounds: [existingRound] }));
+
+    renderAppWithExistingStorage(<App courseProvider={provider} />);
+    await userEvent.type(screen.getByLabelText('Search courses'), 'Pending');
+    await userEvent.click(await screen.findByRole('button', { name: /Pending Course/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Resume Lakeview Nine' }));
+    await userEvent.clear(screen.getByLabelText('Hole 1 strokes'));
+    await userEvent.type(screen.getByLabelText('Hole 1 strokes'), '5');
+
+    await act(async () => {
+      pendingLoad.resolve(providerCourse('pending', 'Pending Course'));
+    });
+
+    expect(screen.getByRole('heading', { name: 'Lakeview Nine' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Hole 1 strokes')).toHaveValue(5);
+    expect(screen.queryByRole('heading', { name: 'Pending Course' })).not.toBeInTheDocument();
+
+    const stored = JSON.parse(localStorage.getItem('golf-scorecard-v1') ?? '{}');
+    expect(stored.savedCourses).toEqual([]);
+    expect(stored.rounds[0].scores[0].strokes).toBe(5);
   });
 });

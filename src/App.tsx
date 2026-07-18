@@ -34,6 +34,7 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
   const [savedCourses, setSavedCourses] = useState(initialState.data.savedCourses);
   const savedCoursesRef = useRef(initialState.data.savedCourses);
   const [rounds, setRounds] = useState<Round[]>(initialState.data.rounds);
+  const roundsRef = useRef(initialState.data.rounds);
   const [storageError, setStorageError] = useState(initialState.storageError);
   const [recoveryRequired, setRecoveryRequired] = useState(initialState.recoveryRequired);
   const [activeTab, setActiveTab] = useState<AppTab>('play');
@@ -104,6 +105,15 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
     }
   }
 
+  function replaceRounds(nextRounds: Round[]): void {
+    roundsRef.current = nextRounds;
+    setRounds(nextRounds);
+  }
+
+  function invalidateProviderLoad(): void {
+    providerLoadRequestRef.current += 1;
+  }
+
   function saveCustomCourse(course: Course): void {
     if (recoveryRequired) return;
     const nextCourses = savedCourses.some((existingCourse) => existingCourse.id === course.id)
@@ -112,33 +122,38 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
 
     savedCoursesRef.current = nextCourses;
     setSavedCourses(nextCourses);
-    persist(nextCourses, rounds);
+    persist(nextCourses, roundsRef.current);
+    invalidateProviderLoad();
     setEditingCourseId(undefined);
     setSelectedCourseId(undefined);
     setActiveTab('courses');
   }
 
   function selectCourse(courseId: string): void {
+    invalidateProviderLoad();
     setSelectedCourseId(courseId);
     setEditingCourseId(undefined);
   }
 
   function editCourse(courseId: string): void {
+    invalidateProviderLoad();
     setEditingCourseId(courseId);
     setSelectedCourseId(undefined);
   }
 
   function createCourse(): void {
+    invalidateProviderLoad();
     setEditingCourseId('new');
     setSelectedCourseId(undefined);
   }
 
   function changeQuery(nextQuery: string): void {
-    providerLoadRequestRef.current += 1;
+    invalidateProviderLoad();
     setQuery(nextQuery);
   }
 
   function showCourseList(tab: AppTab = activeTab): void {
+    invalidateProviderLoad();
     setActiveTab(tab);
     setSelectedCourseId(undefined);
     setEditingCourseId(undefined);
@@ -154,15 +169,20 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
     }
     const course = courses.find((existingCourse) => existingCourse.id === courseId);
     if (!course) return;
+    if (validateCourse(course).length > 0) {
+      setStorageError('This course has invalid scorecard data and cannot be started.');
+      return;
+    }
 
     const round = createRoundFromCourse(course, {
       id: `round-${Date.now()}`,
       startedAt: new Date().toISOString()
     });
-    const nextRounds = [...rounds, round];
+    const nextRounds = [...roundsRef.current, round];
 
-    setRounds(nextRounds);
-    persist(savedCourses, nextRounds);
+    replaceRounds(nextRounds);
+    persist(savedCoursesRef.current, nextRounds);
+    invalidateProviderLoad();
     setSelectedCourseId(undefined);
     setActiveRoundId(round.id);
     setSummaryRoundId(undefined);
@@ -172,7 +192,7 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
   function changeRoundStrokes(roundId: string, holeNumber: number, strokes: number | undefined): void {
     if (recoveryRequired) return;
     let changed = false;
-    const nextRounds = rounds.map((round) => {
+    const nextRounds = roundsRef.current.map((round) => {
       if (round.id !== roundId) return round;
 
       try {
@@ -184,14 +204,14 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
     });
 
     if (!changed) return;
-    setRounds(nextRounds);
-    persist(savedCourses, nextRounds);
+    replaceRounds(nextRounds);
+    persist(savedCoursesRef.current, nextRounds);
   }
 
   function finishRound(roundId: string): void {
     if (recoveryRequired) return;
     let completedRound: Round | undefined;
-    const nextRounds = rounds.map((round) => {
+    const nextRounds = roundsRef.current.map((round) => {
       if (round.id !== roundId) return round;
 
       try {
@@ -203,13 +223,14 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
     });
 
     if (!completedRound) return;
-    setRounds(nextRounds);
-    persist(savedCourses, nextRounds);
+    replaceRounds(nextRounds);
+    persist(savedCoursesRef.current, nextRounds);
     setActiveRoundId(undefined);
     setSummaryRoundId(completedRound.id);
   }
 
   function resumeRound(roundId: string): void {
+    invalidateProviderLoad();
     setSelectedCourseId(undefined);
     setEditingCourseId(undefined);
     setSummaryRoundId(undefined);
@@ -218,6 +239,7 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
   }
 
   function openCompletedRound(roundId: string): void {
+    invalidateProviderLoad();
     setSummaryRoundId(roundId);
     setActiveRoundId(undefined);
   }
@@ -258,7 +280,7 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
       const nextCourses = duplicateCourse ? currentCourses : [...currentCourses, course];
       savedCoursesRef.current = nextCourses;
       setSavedCourses(nextCourses);
-      persist(nextCourses, rounds);
+      persist(nextCourses, roundsRef.current);
       setSelectedCourseId(course.id);
       setEditingCourseId(undefined);
       setSummaryRoundId(undefined);
@@ -274,10 +296,11 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
 
   function resetSavedData(): void {
     try {
+      invalidateProviderLoad();
       store.reset();
       savedCoursesRef.current = [];
       setSavedCourses([]);
-      setRounds([]);
+      replaceRounds([]);
       setRecoveryRequired(false);
       setStorageError('');
     } catch {

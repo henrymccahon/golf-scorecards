@@ -44,6 +44,18 @@ describe('course domain', () => {
     ]);
   });
 
+  it('rejects duplicate, skipped, and out-of-order hole numbers', () => {
+    const invalidCourses = [
+      { ...validNine, holes: validNine.holes.map((hole, index) => index === 8 ? { ...hole, number: 8 } : hole) },
+      { ...validNine, holes: validNine.holes.map((hole, index) => index === 4 ? { ...hole, number: 6 } : hole) },
+      { ...validNine, holes: [validNine.holes[1], validNine.holes[0], ...validNine.holes.slice(2)] }
+    ];
+
+    for (const course of invalidCourses) {
+      expect(validateCourse(course)).toContain('Holes must be numbered sequentially from 1 to 9.');
+    }
+  });
+
   it('builds searchable text from course name and source', () => {
     expect(getCourseSearchText(validNine)).toBe('lakeview nine custom 9');
   });

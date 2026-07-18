@@ -86,6 +86,30 @@ describe('local scorecard store', () => {
     expect(storage.getItem('test-key-recovery')).toBe(storage.getItem('test-key'));
   });
 
+  it('requires recovery for saved courses that fail semantic course validation', () => {
+    const storage = new MemoryStorage();
+    const invalidCourse = {
+      ...course,
+      holes: course.holes.map((hole, index) => index === 1 ? { ...hole, strokeIndex: 1 } : { ...hole, strokeIndex: 1 })
+    };
+    storage.setItem('test-key', JSON.stringify({ savedCourses: [invalidCourse], rounds: [] }));
+
+    expect(createLocalScorecardStore(storage, 'test-key').load().recoveryRequired).toBe(true);
+    expect(storage.getItem('test-key-recovery')).toBe(storage.getItem('test-key'));
+  });
+
+  it('requires recovery for round snapshots that fail semantic course validation', () => {
+    const storage = new MemoryStorage();
+    const invalidSnapshot = {
+      ...round.courseSnapshot,
+      holes: round.courseSnapshot.holes.map((hole, index) => index === 1 ? { ...hole, strokeIndex: 1 } : { ...hole, strokeIndex: 1 })
+    };
+    storage.setItem('test-key', JSON.stringify({ savedCourses: [], rounds: [{ ...round, courseSnapshot: invalidSnapshot }] }));
+
+    expect(createLocalScorecardStore(storage, 'test-key').load().recoveryRequired).toBe(true);
+    expect(storage.getItem('test-key-recovery')).toBe(storage.getItem('test-key'));
+  });
+
   it('allows saving only after the user resets invalid saved data', () => {
     const storage = new MemoryStorage();
     storage.setItem('test-key', '{corrupt');

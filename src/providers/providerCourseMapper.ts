@@ -27,7 +27,8 @@ export interface ProviderCourseMappingResult {
 }
 
 export function createProviderCourseId(providerId: string, externalCourseId: string): string {
-  return `provided-${slugPart(providerId)}-${slugPart(externalCourseId)}`;
+  const identity = `${providerId}\u0000${externalCourseId}`;
+  return `provided-${slugPart(providerId)}-${slugPart(externalCourseId)}-${hashIdentity(identity)}`;
 }
 
 export function mapProviderCourseToCourse(
@@ -76,4 +77,12 @@ function slugPart(value: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || 'unknown';
+}
+
+function hashIdentity(value: string): string {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = Math.imul(hash ^ value.charCodeAt(index), 0x01000193);
+  }
+  return (hash >>> 0).toString(36);
 }

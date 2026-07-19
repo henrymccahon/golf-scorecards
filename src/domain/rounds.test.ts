@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { adjustStrokes, canCompleteRound, completeRound, createRoundFromCourse, getDisplayStrokes, getRoundTotals, normalizeStrokes, setHoleStrokes } from './rounds';
+import {
+  adjustStrokes,
+  canCompleteRound,
+  completeRound,
+  createRoundFromCourse,
+  getDisplayStrokes,
+  getFirstUnplayedHoleNumber,
+  getRoundResumeTarget,
+  getRoundTotals,
+  normalizeStrokes,
+  setHoleStrokes
+} from './rounds';
 import type { Course, Round } from './types';
 
 function makeCourse(): Course {
@@ -153,5 +164,74 @@ describe('round domain', () => {
       scoreToPar: 0
     });
     expect(canCompleteRound(loadedRound)).toBe(false);
+  });
+
+  it('finds the first unplayed hole using normalized stroke values', () => {
+    const course = makeCourse();
+    const round = createRoundFromCourse(course, {
+      id: 'round-1',
+      startedAt: '2026-07-19T01:00:00.000Z'
+    });
+    const loadedRound = {
+      ...round,
+      scores: round.scores.map((score) => {
+        if (score.holeNumber === 1) return { ...score, strokes: 4 };
+        if (score.holeNumber === 2) return { ...score, strokes: null };
+        if (score.holeNumber === 3) return { ...score, strokes: 0 };
+        return score;
+      })
+    } as unknown as Round;
+
+    expect(getFirstUnplayedHoleNumber(loadedRound)).toBe(2);
+    expect(getRoundResumeTarget(loadedRound)).toEqual({ mode: 'scoring', holeNumber: 2 });
+  });
+
+  it('treats missing score entries as unplayed resume targets', () => {
+    const course = makeCourse();
+    const round = createRoundFromCourse(course, {
+      id: 'round-1',
+      startedAt: '2026-07-19T01:00:00.000Z'
+    });
+    const loadedRound = {
+      ...round,
+      scores: round.scores.filter((score) => score.holeNumber !== 3)
+    };
+    const firstTwoScored = setHoleStrokes(setHoleStrokes(loadedRound, 1, 4), 2, 5);
+
+    expect(getFirstUnplayedHoleNumber(firstTwoScored)).toBe(3);
+    expect(getRoundResumeTarget(firstTwoScored)).toEqual({ mode: 'scoring', holeNumber: 3 });
+  });
+
+  it('returns review as the resume target when every hole is scored', () => {
+    const course = makeCourse();
+    const round = createRoundFromCourse(course, {
+      id: 'round-1',
+      startedAt: '2026-07-19T01:00:00.000Z'
+    });
+    const completeInProgressRound = round.scores.reduce((currentRound, score) => (
+      setHoleStrokes(currentRound, score.holeNumber, 4)
+    ), round);
+
+    expect(getFirstUnplayedHoleNumber(completeInProgressRound)).toBeUndefined();
+    expect(getRoundResumeTarget(completeInProgressRound)).toEqual({ mode: 'review' });
+  });
+
+  it('falls back to hole 1 for a malformed round with no holes', () => {
+    const course = makeCourse();
+    const round = createRoundFromCourse(course, {
+      id: 'round-1',
+      startedAt: '2026-07-19T01:00:00.000Z'
+    });
+    const malformedRound = {
+      ...round,
+      courseSnapshot: {
+        ...round.courseSnapshot,
+        holes: []
+      },
+      scores: []
+    } as Round;
+
+    expect(getFirstUnplayedHoleNumber(malformedRound)).toBeUndefined();
+    expect(getRoundResumeTarget(malformedRound)).toEqual({ mode: 'scoring', holeNumber: 1 });
   });
 });

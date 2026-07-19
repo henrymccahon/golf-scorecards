@@ -8,7 +8,8 @@ import { RoundHistory } from './components/RoundHistory';
 import { RoundSummary } from './components/RoundSummary';
 import { seedCourses } from './data/seedCourses';
 import { validateCourse } from './domain/courses';
-import { completeRound, createRoundFromCourse, setHoleStrokes } from './domain/rounds';
+import { completeRound, createRoundFromCourse, getRoundResumeTarget, setHoleStrokes } from './domain/rounds';
+import type { RoundResumeTarget } from './domain/rounds';
 import type { Course, Round } from './domain/types';
 import { createProviderIdentityKey } from './providers/providerCourseMapper';
 import { staticCourseProvider } from './providers/staticCourseProvider';
@@ -47,6 +48,7 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
   const [selectedCourseId, setSelectedCourseId] = useState<string>();
   const [editingCourseId, setEditingCourseId] = useState<string>();
   const [activeRoundId, setActiveRoundId] = useState<string>();
+  const [activeRoundInitialTarget, setActiveRoundInitialTarget] = useState<RoundResumeTarget>();
   const [summaryRoundId, setSummaryRoundId] = useState<string>();
   const courses = [...seedCourses, ...savedCourses];
   const selectedCourse = courses.find((course) => course.id === selectedCourseId);
@@ -163,6 +165,7 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
     setSelectedCourseId(undefined);
     setEditingCourseId(undefined);
     setActiveRoundId(undefined);
+    setActiveRoundInitialTarget(undefined);
     setSummaryRoundId(undefined);
   }
 
@@ -189,6 +192,7 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
     persist(savedCoursesRef.current, nextRounds);
     invalidateProviderLoad();
     setSelectedCourseId(undefined);
+    setActiveRoundInitialTarget(undefined);
     setActiveRoundId(round.id);
     setSummaryRoundId(undefined);
     setActiveTab('play');
@@ -231,14 +235,17 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
     replaceRounds(nextRounds);
     persist(savedCoursesRef.current, nextRounds);
     setActiveRoundId(undefined);
+    setActiveRoundInitialTarget(undefined);
     setSummaryRoundId(completedRound.id);
   }
 
   function resumeRound(roundId: string): void {
     invalidateProviderLoad();
+    const round = roundsRef.current.find((existingRound) => existingRound.id === roundId);
     setSelectedCourseId(undefined);
     setEditingCourseId(undefined);
     setSummaryRoundId(undefined);
+    setActiveRoundInitialTarget(round ? getRoundResumeTarget(round) : undefined);
     setActiveRoundId(roundId);
     setActiveTab('play');
   }
@@ -246,6 +253,7 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
   function openCompletedRound(roundId: string): void {
     invalidateProviderLoad();
     setSummaryRoundId(roundId);
+    setActiveRoundInitialTarget(undefined);
     setActiveRoundId(undefined);
   }
 
@@ -339,7 +347,7 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
         </div>
       ) : null}
       {storageError ? <p className="error-list" role="alert">{storageError}</p> : null}
-      {activeRound ? <ActiveRound round={activeRound} onBack={() => showCourseList('play')} onChangeStrokes={(holeNumber, strokes) => changeRoundStrokes(activeRound.id, holeNumber, strokes)} onFinishRound={() => finishRound(activeRound.id)} /> : null}
+      {activeRound ? <ActiveRound round={activeRound} initialTarget={activeRoundInitialTarget} onBack={() => showCourseList('play')} onChangeStrokes={(holeNumber, strokes) => changeRoundStrokes(activeRound.id, holeNumber, strokes)} onFinishRound={() => finishRound(activeRound.id)} /> : null}
       {!activeRound && summaryRound ? <RoundSummary round={summaryRound} onBack={() => showCourseList(activeTab)} /> : null}
       {!activeRound && !summaryRound && editingCourseId ? <CourseForm course={editingCourse} hasPriorRounds={editingCourse !== undefined && rounds.some((round) => round.courseId === editingCourse.id || round.courseSnapshot.id === editingCourse.id)} onSave={saveCustomCourse} onCancel={() => showCourseList('courses')} /> : null}
       {!activeRound && !summaryRound && !editingCourseId && selectedCourse ? <CourseDetail course={selectedCourse} onBack={() => setSelectedCourseId(undefined)} onStartRound={startRound} onEditCourse={editCourse} /> : null}

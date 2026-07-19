@@ -109,6 +109,25 @@ p {
   margin-top: 4px;
 }
 
+.resume-banner {
+  display: grid;
+  gap: 8px;
+}
+
+.resume-banner > span:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.resume-banner small {
+  color: #64736c;
+}
+
+.resume-action {
+  color: #174a3c;
+  font-weight: 800;
+}
+
 .course-detail-hole-card {
   display: grid;
   gap: 8px;

@@ -25,7 +25,7 @@
 
 - `src/App.tsx`: derive the app-level header title from current view state.
 - `src/App.test.tsx`: verify contextual app header titles through course detail, scoring, review, summary, history, and course setup.
-- `src/components/CourseDetail.tsx`: group each hole row's metadata in a labelled wrapper that CSS can space cleanly.
+- `src/components/CourseDetail.tsx`: group each hole row's metadata in a structural wrapper that CSS can space cleanly.
 - `src/components/CourseDetail.test.tsx`: verify course detail rows expose hole metadata as grouped content.
 - `src/components/ActiveRound.tsx`: keep the last-hole button accessible name as `Review scorecard` while using compact visible text.
 - `src/components/ActiveRound.test.tsx`: verify the compact visible label and unchanged accessible button name.
@@ -158,8 +158,9 @@ Expected: commit succeeds.
 - Modify: `src/styles.css`
 
 **Interfaces:**
-- Produces: `aria-label="Hole N scorecard row"` on each course detail hole row.
-- Produces: `aria-label="Hole N metadata"` on each grouped metadata wrapper.
+- Produces: `data-testid="course-detail-hole-N"` on each course detail hole row.
+- Produces: `data-testid="course-detail-hole-N-metadata"` on each grouped metadata wrapper.
+- Preserves: no layout-only `aria-label` attributes on generic course detail row wrappers.
 - Preserves: `CourseDetailProps` and the `onStartRound(course.id)` / `onEditCourse(course.id)` callbacks.
 
 - [ ] **Step 1: Create the failing CourseDetail test**
@@ -201,13 +202,15 @@ describe('CourseDetail', () => {
       />
     );
 
-    const holeRow = screen.getByLabelText('Hole 1 scorecard row');
-    const metadata = screen.getByLabelText('Hole 1 metadata');
+    const holeRow = screen.getByTestId('course-detail-hole-1');
+    const metadata = screen.getByTestId('course-detail-hole-1-metadata');
 
     expect(holeRow).toContainElement(metadata);
     expect(metadata).toHaveTextContent('Par 5');
     expect(metadata).toHaveTextContent('SI 1');
     expect(metadata).toHaveTextContent('120 yards');
+    expect(screen.queryByLabelText('Hole 1 scorecard row')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Hole 1 metadata')).not.toBeInTheDocument();
   });
 
   it('keeps start and edit callbacks unchanged', async () => {
@@ -240,7 +243,7 @@ Run:
 npm test -- --run src/components/CourseDetail.test.tsx
 ```
 
-Expected: FAIL because the course detail rows do not expose `Hole 1 scorecard row` or `Hole 1 metadata` yet.
+Expected: FAIL because the course detail rows do not expose `course-detail-hole-1` or `course-detail-hole-1-metadata` test ids yet.
 
 - [ ] **Step 3: Group course detail hole metadata**
 
@@ -261,10 +264,10 @@ with:
           <div
             key={hole.number}
             className="hole-card course-detail-hole-card"
-            aria-label={`Hole ${hole.number} scorecard row`}
+            data-testid={`course-detail-hole-${hole.number}`}
           >
             <strong>Hole {hole.number}</strong>
-            <div className="course-detail-hole-meta" aria-label={`Hole ${hole.number} metadata`}>
+            <div className="course-detail-hole-meta" data-testid={`course-detail-hole-${hole.number}-metadata`}>
               <span>Par {hole.par}</span>
               {hole.strokeIndex ? <span>SI {hole.strokeIndex}</span> : null}
               {hole.teeDistance ? <span>{hole.teeDistance} {hole.teeDistanceUnit ?? 'meters'}</span> : null}

@@ -32,13 +32,15 @@ describe('CourseDetail', () => {
       />
     );
 
-    const holeRow = screen.getByLabelText('Hole 1 scorecard row');
-    const metadata = screen.getByLabelText('Hole 1 metadata');
+    const holeRow = screen.getByTestId('course-detail-hole-1');
+    const metadata = screen.getByTestId('course-detail-hole-1-metadata');
 
     expect(holeRow).toContainElement(metadata);
     expect(metadata).toHaveTextContent('Par 5');
     expect(metadata).toHaveTextContent('SI 1');
     expect(metadata).toHaveTextContent('120 yards');
+    expect(screen.queryByLabelText('Hole 1 scorecard row')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Hole 1 metadata')).not.toBeInTheDocument();
   });
 
   it('keeps start and edit callbacks unchanged', async () => {

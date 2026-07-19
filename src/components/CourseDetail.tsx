@@ -21,10 +21,10 @@ export function CourseDetail({ course, onBack, onStartRound, onEditCourse }: Cou
           <div
             key={hole.number}
             className="hole-card course-detail-hole-card"
-            aria-label={`Hole ${hole.number} scorecard row`}
+            data-testid={`course-detail-hole-${hole.number}`}
           >
             <strong>Hole {hole.number}</strong>
-            <div className="course-detail-hole-meta" aria-label={`Hole ${hole.number} metadata`}>
+            <div className="course-detail-hole-meta" data-testid={`course-detail-hole-${hole.number}-metadata`}>
               <span>Par {hole.par}</span>
               {hole.strokeIndex ? <span>SI {hole.strokeIndex}</span> : null}
               {hole.teeDistance ? <span>{hole.teeDistance} {hole.teeDistanceUnit ?? 'meters'}</span> : null}

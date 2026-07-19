@@ -18,11 +18,17 @@ export function CourseDetail({ course, onBack, onStartRound, onEditCourse }: Cou
       </header>
       <div className="scorecard-grid">
         {course.holes.map((hole) => (
-          <div key={hole.number} className="hole-card">
+          <div
+            key={hole.number}
+            className="hole-card course-detail-hole-card"
+            aria-label={`Hole ${hole.number} scorecard row`}
+          >
             <strong>Hole {hole.number}</strong>
-            <span>Par {hole.par}</span>
-            {hole.strokeIndex ? <span>SI {hole.strokeIndex}</span> : null}
-            {hole.teeDistance ? <span>{hole.teeDistance} {hole.teeDistanceUnit ?? 'meters'}</span> : null}
+            <div className="course-detail-hole-meta" aria-label={`Hole ${hole.number} metadata`}>
+              <span>Par {hole.par}</span>
+              {hole.strokeIndex ? <span>SI {hole.strokeIndex}</span> : null}
+              {hole.teeDistance ? <span>{hole.teeDistance} {hole.teeDistanceUnit ?? 'meters'}</span> : null}
+            </div>
           </div>
         ))}
       </div>

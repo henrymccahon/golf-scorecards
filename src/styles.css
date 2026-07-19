@@ -280,6 +280,7 @@ p {
 }
 
 .hole-navigation-controls button {
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -427,6 +428,15 @@ p {
 
   .score-value {
     font-size: 3.25rem;
+  }
+
+  .hole-navigation-controls {
+    gap: 8px;
+  }
+
+  .hole-navigation-controls button {
+    padding-inline: 8px;
+    font-size: 0.92rem;
   }
 
   .bottom-nav {

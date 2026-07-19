@@ -31,6 +31,7 @@ export function ActiveRound({ round, onBack, onChangeStrokes, onFinishRound }: A
   const selectedHole = holes[selectedIndex] ?? holes[0];
   const selectedScore = round.scores.find((entry) => entry.holeNumber === selectedHole?.number);
   const displayStrokes = getDisplayStrokes(selectedScore?.strokes);
+  const isLastHole = selectedIndex >= holes.length - 1;
 
   function changeSelectedStrokes(delta: 1 | -1): void {
     if (!selectedHole) return;
@@ -97,11 +98,11 @@ export function ActiveRound({ round, onBack, onChangeStrokes, onFinishRound }: A
         <button
           className="primary-button"
           type="button"
-          aria-label={selectedIndex >= holes.length - 1 ? 'Review scorecard' : 'Next hole'}
+          aria-label={isLastHole ? 'Review scorecard' : 'Next hole'}
           onClick={goToNextHole}
         >
-          <span>{selectedIndex >= holes.length - 1 ? 'Review scorecard' : 'Next'}</span>
-          {selectedIndex >= holes.length - 1 ? null : <ChevronRight aria-hidden="true" size={20} />}
+          <span>{isLastHole ? 'Review' : 'Next'}</span>
+          {isLastHole ? null : <ChevronRight aria-hidden="true" size={20} />}
         </button>
       </div>
       <HoleNavigator

@@ -182,8 +182,11 @@ describe('App course flows', () => {
     firstRender.unmount();
     renderAppWithExistingStorage(<App />);
 
-    await userEvent.click(screen.getByRole('button', { name: /Resume Lakeview Nine/ }));
-    expect(screen.getByLabelText('Hole 1 displayed score')).toHaveTextContent('5');
+    await userEvent.click(screen.getByRole('button', { name: /Resume Lakeview Nine, 1\/9 holes, Total 5, \+1, Next: Hole 2/ }));
+
+    expect(screen.getByRole('heading', { name: 'Hole 2' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Hole 2 displayed score')).toHaveTextContent('0');
+    expect(screen.getByRole('button', { name: 'Hole 1, 5 strokes' })).toBeInTheDocument();
   });
 
   it('routes a new start request to the existing in-progress round', async () => {
@@ -211,7 +214,7 @@ describe('App course flows', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Start round' }));
     await userEvent.click(screen.getByRole('button', { name: 'Back' }));
     await userEvent.click(screen.getByRole('button', { name: 'Courses' }));
-    await userEvent.click(screen.getByText('Saturday Nine'));
+    await userEvent.click(screen.getByRole('button', { name: /Saturday Nine 9 holes · Par 36 · custom/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Edit course' }));
 
     expect(screen.getByText(/Historical scorecards keep their original hole data/)).toBeInTheDocument();
@@ -224,13 +227,34 @@ describe('App course flows', () => {
 
     renderAppWithExistingStorage(<App />);
 
-    expect(screen.getByRole('button', { name: 'Resume Lakeview Nine' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Resume Parklands Championship' })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Resume Parklands Championship' }));
+    expect(screen.getByRole('button', { name: /Resume Lakeview Nine, 0\/9 holes, Total 0, E, Next: Hole 1/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Resume Parklands Championship, 0\/18 holes, Total 0, E, Next: Hole 1/ })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Resume Parklands Championship, 0\/18 holes, Total 0, E, Next: Hole 1/ }));
 
     expect(screen.getByRole('heading', { name: 'Parklands Championship' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Hole 1' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Hole 18, unplayed/ })).toBeInTheDocument();
+  });
+
+  it('resumes a fully scored in-progress round to scorecard review', async () => {
+    const round = createRoundFromCourse(seedCourses[0], {
+      id: 'round-1',
+      startedAt: '2026-07-19T01:00:00.000Z'
+    });
+    const fullyScoredRound = round.scores.reduce((currentRound, score) => ({
+      ...currentRound,
+      scores: currentRound.scores.map((entry) =>
+        entry.holeNumber === score.holeNumber ? { ...entry, strokes: 4 } : entry
+      )
+    }), round);
+    localStorage.setItem('golf-scorecard-v1', JSON.stringify({ savedCourses: [], rounds: [fullyScoredRound] }));
+
+    renderAppWithExistingStorage(<App />);
+
+    await userEvent.click(screen.getByRole('button', { name: /Resume Lakeview Nine, 9\/9 holes, Total 36, E, Ready to review/ }));
+
+    expect(screen.getByRole('heading', { name: 'Scorecard review' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Finish round' })).toBeEnabled();
   });
 
   it('does not warn when creating a course after loading a round without courseId', async () => {
@@ -441,7 +465,7 @@ describe('App course flows', () => {
     renderAppWithExistingStorage(<App courseProvider={provider} />);
     await userEvent.type(screen.getByLabelText('Search courses'), 'Pending');
     await userEvent.click(await screen.findByRole('button', { name: /Pending Course/ }));
-    await userEvent.click(screen.getByRole('button', { name: 'Resume Lakeview Nine' }));
+    await userEvent.click(screen.getByRole('button', { name: /Resume Lakeview Nine, 0\/9 holes, Total 0, E, Next: Hole 1/ }));
     for (let stroke = 0; stroke < 5; stroke += 1) {
       await userEvent.click(screen.getByRole('button', { name: 'Increase hole 1 strokes' }));
     }

@@ -12,12 +12,37 @@ export interface RoundTotals {
   backNinePar: number;
 }
 
+export type RoundResumeTarget = { mode: 'scoring'; holeNumber: number } | { mode: 'review' };
+
 export function normalizeStrokes(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : undefined;
 }
 
 export function getDisplayStrokes(value: unknown): number {
   return normalizeStrokes(value) ?? 0;
+}
+
+export function getFirstUnplayedHoleNumber(round: Round): number | undefined {
+  const scoreByHole = new Map(round.scores.map((score) => [score.holeNumber, score]));
+  const firstUnplayedHole = round.courseSnapshot.holes.find((hole) =>
+    normalizeStrokes(scoreByHole.get(hole.number)?.strokes) === undefined
+  );
+
+  return firstUnplayedHole?.number;
+}
+
+export function getRoundResumeTarget(round: Round): RoundResumeTarget {
+  const firstUnplayedHoleNumber = getFirstUnplayedHoleNumber(round);
+
+  if (firstUnplayedHoleNumber !== undefined) {
+    return { mode: 'scoring', holeNumber: firstUnplayedHoleNumber };
+  }
+
+  if (round.courseSnapshot.holes.length === 0) {
+    return { mode: 'scoring', holeNumber: 1 };
+  }
+
+  return { mode: 'review' };
 }
 
 export function adjustStrokes(value: unknown, delta: 1 | -1): number | undefined {

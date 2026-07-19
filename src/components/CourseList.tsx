@@ -1,4 +1,5 @@
 import { calculateCoursePar, getCourseSearchText } from '../domain/courses';
+import { getRoundResumeTarget, getRoundTotals } from '../domain/rounds';
 import type { Course, Round } from '../domain/types';
 import { createProviderIdentityKey } from '../providers/providerCourseMapper';
 import type { CourseSearchResult } from '../providers/types';
@@ -38,11 +39,29 @@ export function CourseList({
 
   return (
     <section className="screen">
-      {inProgressRounds.map((round) => (
-        <button key={round.id} className="resume-banner" onClick={() => onResumeRound(round.id)}>
-          Resume {round.courseSnapshot.name}
-        </button>
-      ))}
+      {inProgressRounds.map((round) => {
+        const totals = getRoundTotals(round);
+        const resumeTarget = getRoundResumeTarget(round);
+        const nextAction = resumeTarget.mode === 'review' ? 'Ready to review' : `Next: Hole ${resumeTarget.holeNumber}`;
+        const progress = `${totals.completedHoles}/${round.courseSnapshot.holeCount} holes`;
+        const totalLabel = `Total ${totals.totalStrokes}`;
+        const scoreLabel = formatScoreToPar(totals.scoreToPar);
+
+        return (
+          <button
+            key={round.id}
+            className="resume-banner"
+            aria-label={`Resume ${round.courseSnapshot.name}, ${progress}, ${totalLabel}, ${scoreLabel}, ${nextAction}`}
+            onClick={() => onResumeRound(round.id)}
+          >
+            <span>
+              <strong>{round.courseSnapshot.name}</strong>
+              <small>{progress} · {totalLabel} · {scoreLabel}</small>
+            </span>
+            <span className="resume-action">{nextAction}</span>
+          </button>
+        );
+      })}
       <label className="field">
         <span>Search courses</span>
         <input
@@ -95,4 +114,9 @@ export function CourseList({
       ) : null}
     </section>
   );
+}
+
+function formatScoreToPar(scoreToPar: number) {
+  if (scoreToPar === 0) return 'E';
+  return scoreToPar > 0 ? `+${scoreToPar}` : `${scoreToPar}`;
 }

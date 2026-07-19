@@ -37,6 +37,36 @@ function makeCompleteRound(holeCount: 9 | 18 = 9): Round {
 }
 
 describe('ActiveRound mobile scoring', () => {
+  it('opens to an initial scoring target when one is provided', () => {
+    renderApp(
+      <ActiveRound
+        round={makeRound()}
+        initialTarget={{ mode: 'scoring', holeNumber: 4 }}
+        onBack={() => undefined}
+        onChangeStrokes={() => undefined}
+        onFinishRound={() => undefined}
+      />
+    );
+
+    expect(screen.getByRole('heading', { name: 'Hole 4' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Hole 4, unplayed, selected' })).toBeInTheDocument();
+  });
+
+  it('opens to review when the initial target is review', () => {
+    renderApp(
+      <ActiveRound
+        round={makeCompleteRound()}
+        initialTarget={{ mode: 'review' }}
+        onBack={() => undefined}
+        onChangeStrokes={() => undefined}
+        onFinishRound={() => undefined}
+      />
+    );
+
+    expect(screen.getByRole('heading', { name: 'Scorecard review' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Finish round' })).toBeEnabled();
+  });
+
   it('opens to hole 1 with metadata and an unplayed score displayed as zero', () => {
     renderApp(
       <ActiveRound

@@ -314,11 +314,23 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
     }
   }
 
+  const pageTitle = getPageTitle();
+
+  function getPageTitle(): string {
+    if (activeRound) return 'Score round';
+    if (summaryRound) return 'Round summary';
+    if (editingCourseId) return 'Course setup';
+    if (selectedCourse) return 'Course scorecard';
+    if (activeTab === 'history') return 'History';
+    if (activeTab === 'courses') return 'Courses';
+    return 'Start a round';
+  }
+
   return (
     <main className="app-shell">
       <header className="app-header">
         <p className="eyebrow">Golf Scorecard</p>
-        <h1>{activeTab === 'history' ? 'History' : activeTab === 'courses' ? 'Courses' : 'Start a round'}</h1>
+        <h1>{pageTitle}</h1>
       </header>
       {recoveryRequired ? (
         <div className="recovery-panel" role="alert">

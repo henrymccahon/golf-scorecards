@@ -100,7 +100,9 @@ describe('ActiveRound mobile scoring', () => {
     expect(screen.getByRole('heading', { name: 'Hole 1' })).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: /Hole 9, unplayed/ }));
-    await userEvent.click(screen.getByRole('button', { name: 'Review scorecard' }));
+    const reviewScorecardButton = screen.getByRole('button', { name: 'Review scorecard' });
+    expect(reviewScorecardButton).toHaveTextContent(/^Review$/);
+    await userEvent.click(reviewScorecardButton);
 
     expect(screen.getByRole('heading', { name: 'Scorecard review' })).toBeInTheDocument();
   });

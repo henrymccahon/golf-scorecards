@@ -53,6 +53,41 @@ describe('App course flows', () => {
     expect(screen.queryByText('Lakeview Nine')).not.toBeInTheDocument();
   });
 
+  it('shows contextual app header titles while moving through scoring states', async () => {
+    renderApp(<App />);
+
+    expect(screen.getByRole('heading', { name: 'Start a round' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByText('Lakeview Nine'));
+    expect(screen.getByRole('heading', { name: 'Course scorecard' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Lakeview Nine' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Start round' }));
+    expect(screen.getByRole('heading', { name: 'Score round' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Hole 1' })).toBeInTheDocument();
+
+    await scoreVisibleRound(9, 4);
+    expect(screen.getByRole('heading', { name: 'Score round' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Scorecard review' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Finish round' }));
+    expect(screen.getByRole('heading', { name: 'Round summary' })).toBeInTheDocument();
+    expect(screen.getByText('Total 36')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'History' }));
+    expect(screen.getByRole('heading', { name: 'History' })).toBeInTheDocument();
+  });
+
+  it('shows course setup as the app header while creating a custom course', async () => {
+    renderApp(<App />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Courses' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create a custom course' }));
+
+    expect(screen.getByRole('heading', { name: 'Course setup' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Create course' })).toBeInTheDocument();
+  });
+
   it('creates a custom 9-hole course and shows it in the course list', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     renderApp(<App />);

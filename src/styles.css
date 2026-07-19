@@ -109,6 +109,26 @@ p {
   margin-top: 4px;
 }
 
+.course-detail-hole-card {
+  display: grid;
+  gap: 8px;
+}
+
+.course-detail-hole-card strong {
+  line-height: 1.2;
+}
+
+.course-detail-hole-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  color: #52675f;
+}
+
+.course-detail-hole-meta span {
+  white-space: nowrap;
+}
+
 .primary-button,
 .secondary-button,
 .text-button {
@@ -260,6 +280,7 @@ p {
 }
 
 .hole-navigation-controls button {
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -407,6 +428,15 @@ p {
 
   .score-value {
     font-size: 3.25rem;
+  }
+
+  .hole-navigation-controls {
+    gap: 8px;
+  }
+
+  .hole-navigation-controls button {
+    padding-inline: 8px;
+    font-size: 0.92rem;
   }
 
   .bottom-nav {

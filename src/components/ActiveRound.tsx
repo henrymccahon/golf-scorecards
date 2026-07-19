@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Round } from '../domain/types';
-import { adjustStrokes, getDisplayStrokes, getRoundTotals } from '../domain/rounds';
+import { adjustStrokes, getDisplayStrokes, getRoundTotals, type RoundResumeTarget } from '../domain/rounds';
 import { HoleNavigator } from './HoleNavigator';
 import { HoleScoreEntry } from './HoleScoreEntry';
 import { ScorecardReview } from './ScorecardReview';
 
 interface ActiveRoundProps {
   round: Round;
+  initialTarget?: RoundResumeTarget;
   onBack(): void;
   onChangeStrokes(holeNumber: number, strokes: number | undefined): void;
   onFinishRound(): void;
@@ -15,16 +16,17 @@ interface ActiveRoundProps {
 
 type ActiveRoundMode = 'scoring' | 'review';
 
-export function ActiveRound({ round, onBack, onChangeStrokes, onFinishRound }: ActiveRoundProps) {
+export function ActiveRound({ round, initialTarget, onBack, onChangeStrokes, onFinishRound }: ActiveRoundProps) {
   const holes = round.courseSnapshot.holes;
   const firstHoleNumber = holes[0]?.number ?? 1;
-  const [mode, setMode] = useState<ActiveRoundMode>('scoring');
-  const [selectedHoleNumber, setSelectedHoleNumber] = useState(firstHoleNumber);
+  const [mode, setMode] = useState<ActiveRoundMode>(() => getInitialMode(initialTarget));
+  const [selectedHoleNumber, setSelectedHoleNumber] = useState(() => getInitialHoleNumber(initialTarget, firstHoleNumber));
+  const initialTargetHoleNumber = initialTarget?.mode === 'scoring' ? initialTarget.holeNumber : undefined;
 
   useEffect(() => {
-    setMode('scoring');
-    setSelectedHoleNumber(firstHoleNumber);
-  }, [firstHoleNumber, round.id]);
+    setMode(getInitialMode(initialTarget));
+    setSelectedHoleNumber(getInitialHoleNumber(initialTarget, firstHoleNumber));
+  }, [firstHoleNumber, round.id, initialTarget?.mode, initialTargetHoleNumber]);
 
   const totals = getRoundTotals(round);
   const selectedIndex = Math.max(0, holes.findIndex((hole) => hole.number === selectedHoleNumber));
@@ -113,6 +115,14 @@ export function ActiveRound({ round, onBack, onChangeStrokes, onFinishRound }: A
       />
     </section>
   );
+}
+
+function getInitialMode(initialTarget: RoundResumeTarget | undefined): ActiveRoundMode {
+  return initialTarget?.mode ?? 'scoring';
+}
+
+function getInitialHoleNumber(initialTarget: RoundResumeTarget | undefined, firstHoleNumber: number): number {
+  return initialTarget?.mode === 'scoring' ? initialTarget.holeNumber : firstHoleNumber;
 }
 
 function formatScoreToPar(scoreToPar: number) {

@@ -216,6 +216,23 @@ describe('ActiveRound mobile scoring', () => {
     expect(screen.getByRole('heading', { name: 'Hole 2' })).toBeInTheDocument();
   });
 
+  it('shows stroke index and distance metadata on scorecard review holes', async () => {
+    renderApp(
+      <ActiveRound
+        round={setHoleStrokes(makeRound(), 1, 5)}
+        onBack={() => undefined}
+        onChangeStrokes={() => undefined}
+        onFinishRound={() => undefined}
+      />
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: /Hole 9, unplayed/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Review scorecard' }));
+
+    expect(screen.getByRole('button', { name: /Hole 1/ })).toHaveTextContent('SI 1 · 120 yards');
+    expect(screen.getByRole('button', { name: /Hole 2/ })).toHaveTextContent('SI 2 · 121 yards');
+  });
+
   it('finishes only from the review screen', async () => {
     const onFinishRound = vi.fn();
     renderApp(

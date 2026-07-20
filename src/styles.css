@@ -443,6 +443,11 @@ p {
   color: #52675f;
 }
 
+.review-hole-meta {
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
 .primary-button:disabled {
   opacity: 0.55;
 }

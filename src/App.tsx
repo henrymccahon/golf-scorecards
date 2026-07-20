@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { BottomNav, type AppTab } from './components/BottomNav';
 import { ActiveRound } from './components/ActiveRound';
-import { CourseDetail } from './components/CourseDetail';
+import { CourseDetail, type CourseDetailRoundAction } from './components/CourseDetail';
 import { CourseForm } from './components/CourseForm';
 import { CourseList } from './components/CourseList';
 import { RoundHistory } from './components/RoundHistory';
 import { RoundSummary } from './components/RoundSummary';
 import { seedCourses } from './data/seedCourses';
 import { validateCourse } from './domain/courses';
-import { completeRound, createRoundFromCourse, getRoundResumeTarget, setHoleStrokes } from './domain/rounds';
+import { completeRound, createRoundFromCourse, getRoundResumeTarget, getRoundTotals, setHoleStrokes } from './domain/rounds';
 import type { RoundResumeTarget } from './domain/rounds';
 import type { Course, Round } from './domain/types';
 import { createProviderIdentityKey } from './providers/providerCourseMapper';
@@ -57,6 +57,7 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
   const inProgressRound = inProgressRounds[0];
   const activeRound = rounds.find((round) => round.id === activeRoundId);
   const summaryRound = rounds.find((round) => round.id === summaryRoundId);
+  const selectedCourseRoundAction = selectedCourse ? getCourseDetailRoundAction(selectedCourse) : undefined;
 
   useEffect(() => {
     providerLoadRequestRef.current += 1;
@@ -171,10 +172,7 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
 
   function startRound(courseId: string): void {
     if (recoveryRequired) return;
-    if (inProgressRound) {
-      resumeRound(inProgressRound.id);
-      return;
-    }
+    if (inProgressRounds.length > 0) return;
     const course = courses.find((existingCourse) => existingCourse.id === courseId);
     if (!course) return;
     if (validateCourse(course).length > 0) {
@@ -322,6 +320,34 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
     }
   }
 
+  function getCourseDetailRoundAction(course: Course): CourseDetailRoundAction {
+    const matchingInProgressRound = inProgressRounds.find((round) => isRoundForCourse(round, course));
+
+    if (matchingInProgressRound) {
+      return {
+        type: 'resume',
+        roundId: matchingInProgressRound.id,
+        courseName: matchingInProgressRound.courseSnapshot.name,
+        progressLabel: getRoundProgressLabel(matchingInProgressRound)
+      };
+    }
+
+    if (inProgressRound) {
+      return {
+        type: 'blocked',
+        roundId: inProgressRound.id,
+        courseName: inProgressRound.courseSnapshot.name,
+        progressLabel: getRoundProgressLabel(inProgressRound)
+      };
+    }
+
+    return { type: 'start' };
+  }
+
+  function isRoundForCourse(round: Round, course: Course): boolean {
+    return round.courseId === course.id || round.courseSnapshot.id === course.id;
+  }
+
   const pageTitle = getPageTitle();
 
   function getPageTitle(): string {
@@ -350,7 +376,7 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
       {activeRound ? <ActiveRound round={activeRound} initialTarget={activeRoundInitialTarget} onBack={() => showCourseList('play')} onChangeStrokes={(holeNumber, strokes) => changeRoundStrokes(activeRound.id, holeNumber, strokes)} onFinishRound={() => finishRound(activeRound.id)} /> : null}
       {!activeRound && summaryRound ? <RoundSummary round={summaryRound} onBack={() => showCourseList(activeTab)} /> : null}
       {!activeRound && !summaryRound && editingCourseId ? <CourseForm course={editingCourse} hasPriorRounds={editingCourse !== undefined && rounds.some((round) => round.courseId === editingCourse.id || round.courseSnapshot.id === editingCourse.id)} onSave={saveCustomCourse} onCancel={() => showCourseList('courses')} /> : null}
-      {!activeRound && !summaryRound && !editingCourseId && selectedCourse ? <CourseDetail course={selectedCourse} onBack={() => setSelectedCourseId(undefined)} onStartRound={startRound} onEditCourse={editCourse} /> : null}
+      {!activeRound && !summaryRound && !editingCourseId && selectedCourse ? <CourseDetail course={selectedCourse} roundAction={selectedCourseRoundAction} onBack={() => setSelectedCourseId(undefined)} onStartRound={startRound} onResumeRound={resumeRound} onEditCourse={editCourse} /> : null}
       {!activeRound && !summaryRound && !editingCourseId && !selectedCourse && activeTab !== 'history' ? (
         <CourseList
           courses={courses}
@@ -370,4 +396,9 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
       <BottomNav activeTab={activeTab} onSelect={showCourseList} />
     </main>
   );
+}
+
+function getRoundProgressLabel(round: Round): string {
+  const totals = getRoundTotals(round);
+  return `${totals.completedHoles}/${round.courseSnapshot.holeCount} holes complete`;
 }

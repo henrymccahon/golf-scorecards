@@ -189,14 +189,39 @@ describe('App course flows', () => {
     expect(screen.getByRole('button', { name: 'Hole 1, 5 strokes' })).toBeInTheDocument();
   });
 
-  it('routes a new start request to the existing in-progress round', async () => {
+  it('resumes a same-course in-progress round from course detail', async () => {
+    renderApp(<App />);
+
+    await userEvent.click(screen.getByText('Lakeview Nine'));
+    await userEvent.click(screen.getByRole('button', { name: 'Start round' }));
+    for (let stroke = 0; stroke < 5; stroke += 1) {
+      await userEvent.click(screen.getByRole('button', { name: 'Increase hole 1 strokes' }));
+    }
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await userEvent.click(screen.getByRole('button', { name: /Lakeview Nine 9 holes · Par 36 · seeded/ }));
+
+    expect(screen.queryByRole('button', { name: 'Start round' })).not.toBeInTheDocument();
+    expect(screen.getByText('1/9 holes complete')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Resume round' }));
+
+    expect(screen.getByRole('heading', { name: 'Lakeview Nine' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Hole 2' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Hole 2 displayed score')).toHaveTextContent('0');
+  });
+
+  it('blocks starting a different course while another course is in progress', async () => {
     renderApp(<App />);
 
     await userEvent.click(screen.getByText('Lakeview Nine'));
     await userEvent.click(screen.getByRole('button', { name: 'Start round' }));
     await userEvent.click(screen.getByRole('button', { name: 'Back' }));
-    await userEvent.click(screen.getByText('Parklands Championship'));
-    await userEvent.click(screen.getByRole('button', { name: 'Start round' }));
+    await userEvent.click(screen.getByRole('button', { name: /Parklands Championship 18 holes · Par 72 · seeded/ }));
+
+    expect(screen.queryByRole('button', { name: 'Start round' })).not.toBeInTheDocument();
+    expect(screen.getByText('Finish or abandon Lakeview Nine before starting another round.')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Resume Lakeview Nine' }));
 
     expect(screen.getByRole('heading', { name: 'Lakeview Nine' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Hole 1' })).toBeInTheDocument();

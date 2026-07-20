@@ -1,14 +1,28 @@
 import { calculateCoursePar, getCourseSourceLabel } from '../domain/courses';
 import type { Course } from '../domain/types';
 
+export type CourseDetailRoundAction =
+  | { type: 'start' }
+  | { type: 'resume'; roundId: string; courseName: string; progressLabel: string }
+  | { type: 'blocked'; roundId: string; courseName: string; progressLabel: string };
+
 interface CourseDetailProps {
   course: Course;
+  roundAction?: CourseDetailRoundAction;
   onBack(): void;
   onStartRound(courseId: string): void;
+  onResumeRound(roundId: string): void;
   onEditCourse(courseId: string): void;
 }
 
-export function CourseDetail({ course, onBack, onStartRound, onEditCourse }: CourseDetailProps) {
+export function CourseDetail({
+  course,
+  roundAction = { type: 'start' },
+  onBack,
+  onStartRound,
+  onResumeRound,
+  onEditCourse
+}: CourseDetailProps) {
   return (
     <section className="screen">
       <button className="text-button" onClick={onBack}>Back</button>
@@ -32,7 +46,24 @@ export function CourseDetail({ course, onBack, onStartRound, onEditCourse }: Cou
           </div>
         ))}
       </div>
-      <button className="primary-button" onClick={() => onStartRound(course.id)}>Start round</button>
+      {roundAction.type === 'start' ? (
+        <button className="primary-button" onClick={() => onStartRound(course.id)}>Start round</button>
+      ) : null}
+      {roundAction.type === 'resume' ? (
+        <div className="round-action-panel">
+          <p className="round-action-note">{roundAction.progressLabel}</p>
+          <button className="primary-button" onClick={() => onResumeRound(roundAction.roundId)}>Resume round</button>
+        </div>
+      ) : null}
+      {roundAction.type === 'blocked' ? (
+        <div className="blocked-round-panel" role="status">
+          <p>Finish or abandon {roundAction.courseName} before starting another round.</p>
+          <p className="round-action-note">{roundAction.progressLabel}</p>
+          <button className="secondary-button" onClick={() => onResumeRound(roundAction.roundId)}>
+            Resume {roundAction.courseName}
+          </button>
+        </div>
+      ) : null}
       {course.source === 'custom' ? (
         <button className="secondary-button" onClick={() => onEditCourse(course.id)}>Edit course</button>
       ) : null}

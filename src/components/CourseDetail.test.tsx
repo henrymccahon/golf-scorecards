@@ -43,15 +43,17 @@ describe('CourseDetail', () => {
     expect(screen.queryByLabelText('Hole 1 metadata')).not.toBeInTheDocument();
   });
 
-  it('keeps start and edit callbacks unchanged', async () => {
+  it('starts a new round when no in-progress round blocks the course', async () => {
     const onStartRound = vi.fn();
     const onEditCourse = vi.fn();
 
     renderApp(
       <CourseDetail
         course={makeCourse()}
+        roundAction={{ type: 'start' }}
         onBack={() => undefined}
         onStartRound={onStartRound}
+        onResumeRound={() => undefined}
         onEditCourse={onEditCourse}
       />
     );
@@ -61,5 +63,62 @@ describe('CourseDetail', () => {
 
     expect(onStartRound).toHaveBeenCalledWith('course-1');
     expect(onEditCourse).toHaveBeenCalledWith('course-1');
+  });
+
+  it('resumes the same course in-progress round from course detail', async () => {
+    const onResumeRound = vi.fn();
+
+    renderApp(
+      <CourseDetail
+        course={makeCourse()}
+        roundAction={{
+          type: 'resume',
+          roundId: 'round-1',
+          courseName: 'Polish Nine',
+          progressLabel: '1/9 holes complete'
+        }}
+        onBack={() => undefined}
+        onStartRound={() => undefined}
+        onResumeRound={onResumeRound}
+        onEditCourse={() => undefined}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'Start round' })).not.toBeInTheDocument();
+    expect(screen.getByText('1/9 holes complete')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Resume round' }));
+
+    expect(onResumeRound).toHaveBeenCalledWith('round-1');
+  });
+
+  it('blocks starting a different course while another round is in progress', async () => {
+    const onResumeRound = vi.fn();
+    const onStartRound = vi.fn();
+
+    renderApp(
+      <CourseDetail
+        course={makeCourse()}
+        roundAction={{
+          type: 'blocked',
+          roundId: 'round-1',
+          courseName: 'Lakeview Nine',
+          progressLabel: '1/9 holes complete'
+        }}
+        onBack={() => undefined}
+        onStartRound={onStartRound}
+        onResumeRound={onResumeRound}
+        onEditCourse={() => undefined}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'Start round' })).not.toBeInTheDocument();
+    expect(screen.getByText('Finish or abandon Lakeview Nine before starting another round.')).toBeInTheDocument();
+    expect(screen.getByText('1/9 holes complete')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Resume Lakeview Nine' }));
+
+    expect(onResumeRound).toHaveBeenCalledWith('round-1');
+    expect(onStartRound).not.toHaveBeenCalled();
   });
 });

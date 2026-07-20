@@ -28,6 +28,7 @@ describe('CourseDetail', () => {
         course={makeCourse()}
         onBack={() => undefined}
         onStartRound={() => undefined}
+        onResumeRound={() => undefined}
         onEditCourse={() => undefined}
       />
     );

@@ -416,7 +416,7 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
       {activeRound ? <ActiveRound round={activeRound} initialTarget={activeRoundInitialTarget} onBack={() => showCourseList('play')} onChangeStrokes={(holeNumber, strokes) => changeRoundStrokes(activeRound.id, holeNumber, strokes)} onFinishRound={() => finishRound(activeRound.id)} /> : null}
       {!activeRound && summaryRound ? <RoundSummary round={summaryRound} onBack={() => showCourseList(activeTab)} /> : null}
       {!activeRound && !summaryRound && editingCourseId ? <CourseForm course={editingCourse} hasPriorRounds={editingCourse !== undefined && rounds.some((round) => round.courseId === editingCourse.id || round.courseSnapshot.id === editingCourse.id)} onSave={saveCustomCourse} onCancel={() => showCourseList('courses')} /> : null}
-      {!activeRound && !summaryRound && !editingCourseId && selectedCourse ? <CourseDetail course={selectedCourse} roundAction={selectedCourseRoundAction} onBack={() => setSelectedCourseId(undefined)} onStartRound={startRound} onResumeRound={resumeRound} onEditCourse={editCourse} /> : null}
+      {!activeRound && !summaryRound && !editingCourseId && selectedCourse ? <CourseDetail course={selectedCourse} roundAction={selectedCourseRoundAction} abandonCandidateRoundId={abandonCandidateRoundId} onBack={() => setSelectedCourseId(undefined)} onStartRound={startRound} onResumeRound={resumeRound} onRequestAbandonRound={requestAbandonRound} onCancelAbandonRound={cancelAbandonRound} onConfirmAbandonRound={confirmAbandonRound} onEditCourse={editCourse} /> : null}
       {!activeRound && !summaryRound && !editingCourseId && !selectedCourse && activeTab !== 'history' ? (
         <CourseList
           courses={courses}

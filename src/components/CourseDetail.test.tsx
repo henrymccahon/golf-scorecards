@@ -29,6 +29,9 @@ describe('CourseDetail', () => {
         onBack={() => undefined}
         onStartRound={() => undefined}
         onResumeRound={() => undefined}
+        onRequestAbandonRound={() => undefined}
+        onCancelAbandonRound={() => undefined}
+        onConfirmAbandonRound={() => undefined}
         onEditCourse={() => undefined}
       />
     );
@@ -55,6 +58,9 @@ describe('CourseDetail', () => {
         onBack={() => undefined}
         onStartRound={onStartRound}
         onResumeRound={() => undefined}
+        onRequestAbandonRound={() => undefined}
+        onCancelAbandonRound={() => undefined}
+        onConfirmAbandonRound={() => undefined}
         onEditCourse={onEditCourse}
       />
     );
@@ -81,6 +87,9 @@ describe('CourseDetail', () => {
         onBack={() => undefined}
         onStartRound={() => undefined}
         onResumeRound={onResumeRound}
+        onRequestAbandonRound={() => undefined}
+        onCancelAbandonRound={() => undefined}
+        onConfirmAbandonRound={() => undefined}
         onEditCourse={() => undefined}
       />
     );
@@ -109,6 +118,9 @@ describe('CourseDetail', () => {
         onBack={() => undefined}
         onStartRound={onStartRound}
         onResumeRound={onResumeRound}
+        onRequestAbandonRound={() => undefined}
+        onCancelAbandonRound={() => undefined}
+        onConfirmAbandonRound={() => undefined}
         onEditCourse={() => undefined}
       />
     );
@@ -121,5 +133,39 @@ describe('CourseDetail', () => {
 
     expect(onResumeRound).toHaveBeenCalledWith('round-1');
     expect(onStartRound).not.toHaveBeenCalled();
+  });
+
+  it('shows blocked-course abandon confirmation when requested', async () => {
+    const onRequestAbandonRound = vi.fn();
+    const onCancelAbandonRound = vi.fn();
+    const onConfirmAbandonRound = vi.fn();
+
+    renderApp(
+      <CourseDetail
+        course={makeCourse()}
+        roundAction={{
+          type: 'blocked',
+          roundId: 'round-1',
+          courseName: 'Lakeview Nine',
+          progressLabel: '1/9 holes complete'
+        }}
+        abandonCandidateRoundId="round-1"
+        onBack={() => undefined}
+        onStartRound={() => undefined}
+        onResumeRound={() => undefined}
+        onRequestAbandonRound={onRequestAbandonRound}
+        onCancelAbandonRound={onCancelAbandonRound}
+        onConfirmAbandonRound={onConfirmAbandonRound}
+        onEditCourse={() => undefined}
+      />
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Abandon Lakeview Nine' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Keep round' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Abandon Lakeview Nine permanently' }));
+
+    expect(onRequestAbandonRound).toHaveBeenCalledWith('round-1');
+    expect(onCancelAbandonRound).toHaveBeenCalled();
+    expect(onConfirmAbandonRound).toHaveBeenCalledWith('round-1');
   });
 });

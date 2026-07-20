@@ -228,6 +228,34 @@ describe('App course flows', () => {
     expect(screen.queryByRole('button', { name: /Hole 18,/ })).not.toBeInTheDocument();
   });
 
+  it('abandons the blocking round from another course detail and then starts the selected course', async () => {
+    renderApp(<App />);
+
+    await userEvent.click(screen.getByText('Lakeview Nine'));
+    await userEvent.click(screen.getByRole('button', { name: 'Start round' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await userEvent.click(screen.getByRole('button', { name: /Parklands Championship 18 holes · Par 72 · seeded/ }));
+
+    await userEvent.click(screen.getByRole('button', { name: 'Abandon Lakeview Nine' }));
+    expect(screen.getByText('Abandon Lakeview Nine?')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Abandon Lakeview Nine permanently' }));
+
+    expect(screen.getByRole('heading', { name: 'Parklands Championship' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Start round' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Start round' }));
+
+    expect(screen.getByRole('heading', { name: 'Parklands Championship' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Hole 1' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Hole 18, unplayed/ })).toBeInTheDocument();
+
+    const stored = JSON.parse(localStorage.getItem('golf-scorecard-v1') ?? '{}');
+    expect(stored.rounds).toHaveLength(1);
+    expect(stored.rounds[0].courseSnapshot.name).toBe('Parklands Championship');
+    expect(stored.rounds[0].status).toBe('in_progress');
+  });
+
   it('warns before editing a course that is referenced by a round', async () => {
     renderApp(<App />);
 

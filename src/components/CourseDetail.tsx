@@ -1,5 +1,6 @@
 import { calculateCoursePar, getCourseSourceLabel } from '../domain/courses';
 import type { Course } from '../domain/types';
+import { AbandonRoundConfirmation } from './AbandonRoundConfirmation';
 
 export type CourseDetailRoundAction =
   | { type: 'start' }
@@ -12,6 +13,10 @@ interface CourseDetailProps {
   onBack(): void;
   onStartRound(courseId: string): void;
   onResumeRound(roundId: string): void;
+  abandonCandidateRoundId?: string;
+  onRequestAbandonRound(roundId: string): void;
+  onCancelAbandonRound(): void;
+  onConfirmAbandonRound(roundId: string): void;
   onEditCourse(courseId: string): void;
 }
 
@@ -21,6 +26,10 @@ export function CourseDetail({
   onBack,
   onStartRound,
   onResumeRound,
+  abandonCandidateRoundId,
+  onRequestAbandonRound,
+  onCancelAbandonRound,
+  onConfirmAbandonRound,
   onEditCourse
 }: CourseDetailProps) {
   return (
@@ -62,6 +71,20 @@ export function CourseDetail({
           <button className="secondary-button" onClick={() => onResumeRound(roundAction.roundId)}>
             Resume {roundAction.courseName}
           </button>
+          <button
+            className="text-button abandon-action"
+            type="button"
+            onClick={() => onRequestAbandonRound(roundAction.roundId)}
+          >
+            Abandon {roundAction.courseName}
+          </button>
+          {abandonCandidateRoundId === roundAction.roundId ? (
+            <AbandonRoundConfirmation
+              courseName={roundAction.courseName}
+              onCancel={onCancelAbandonRound}
+              onConfirm={() => onConfirmAbandonRound(roundAction.roundId)}
+            />
+          ) : null}
         </div>
       ) : null}
       {course.source === 'custom' ? (

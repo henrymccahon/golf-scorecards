@@ -39,6 +39,7 @@ export function ScorecardReview({ round, onBackToScoring, onEditHole, onFinishRo
         {round.courseSnapshot.holes.map((hole) => {
           const strokes = getDisplayStrokes(scoreByHole.get(hole.number)?.strokes);
           const scoreToPar = strokes > 0 ? strokes - hole.par : undefined;
+          const metadataLabel = getHoleMetadataLabel(hole);
 
           return (
             <button
@@ -51,6 +52,7 @@ export function ScorecardReview({ round, onBackToScoring, onEditHole, onFinishRo
               <span>Par {hole.par}</span>
               <span>{strokes}</span>
               <small>{scoreToPar === undefined ? 'Unplayed' : formatScoreToPar(scoreToPar)}</small>
+              {metadataLabel ? <small className="review-hole-meta">{metadataLabel}</small> : null}
             </button>
           );
         })}
@@ -60,6 +62,15 @@ export function ScorecardReview({ round, onBackToScoring, onEditHole, onFinishRo
       </button>
     </section>
   );
+}
+
+function getHoleMetadataLabel(hole: Round['courseSnapshot']['holes'][number]): string | undefined {
+  const metadata = [
+    hole.strokeIndex ? `SI ${hole.strokeIndex}` : undefined,
+    hole.teeDistance ? `${hole.teeDistance} ${hole.teeDistanceUnit ?? 'meters'}` : undefined
+  ].filter(Boolean);
+
+  return metadata.length > 0 ? metadata.join(' · ') : undefined;
 }
 
 function formatScoreToPar(scoreToPar: number) {

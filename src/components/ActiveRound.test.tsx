@@ -82,6 +82,49 @@ describe('ActiveRound mobile scoring', () => {
     expect(screen.getByText('SI 1')).toBeInTheDocument();
     expect(screen.getByText('120 yards')).toBeInTheDocument();
     expect(screen.getByLabelText('Hole 1 displayed score')).toHaveTextContent('0');
+    expect(screen.getByText('No score yet')).toBeInTheDocument();
+  });
+
+  it('shows even score context for a hole scored at par', () => {
+    renderApp(
+      <ActiveRound
+        round={setHoleStrokes(makeRound(), 1, 5)}
+        onBack={() => undefined}
+        onChangeStrokes={() => undefined}
+        onFinishRound={() => undefined}
+      />
+    );
+
+    expect(screen.getByLabelText('Hole 1 displayed score')).toHaveTextContent('5');
+    expect(screen.getByText('Even on this hole')).toBeInTheDocument();
+  });
+
+  it('shows over-par score context for a hole scored above par', () => {
+    renderApp(
+      <ActiveRound
+        round={setHoleStrokes(makeRound(), 1, 6)}
+        onBack={() => undefined}
+        onChangeStrokes={() => undefined}
+        onFinishRound={() => undefined}
+      />
+    );
+
+    expect(screen.getByLabelText('Hole 1 displayed score')).toHaveTextContent('6');
+    expect(screen.getByText('+1 on this hole')).toBeInTheDocument();
+  });
+
+  it('shows under-par score context for a hole scored below par', () => {
+    renderApp(
+      <ActiveRound
+        round={setHoleStrokes(makeRound(), 1, 4)}
+        onBack={() => undefined}
+        onChangeStrokes={() => undefined}
+        onFinishRound={() => undefined}
+      />
+    );
+
+    expect(screen.getByLabelText('Hole 1 displayed score')).toHaveTextContent('4');
+    expect(screen.getByText('-1 on this hole')).toBeInTheDocument();
   });
 
   it('increments and decrements through domain stroke values without storing zero', async () => {
@@ -171,6 +214,23 @@ describe('ActiveRound mobile scoring', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Go to hole 2' }));
 
     expect(screen.getByRole('heading', { name: 'Hole 2' })).toBeInTheDocument();
+  });
+
+  it('shows stroke index and distance metadata on scorecard review holes', async () => {
+    renderApp(
+      <ActiveRound
+        round={setHoleStrokes(makeRound(), 1, 5)}
+        onBack={() => undefined}
+        onChangeStrokes={() => undefined}
+        onFinishRound={() => undefined}
+      />
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: /Hole 9, unplayed/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Review scorecard' }));
+
+    expect(screen.getByRole('button', { name: /Hole 1/ })).toHaveTextContent('SI 1 · 120 yards');
+    expect(screen.getByRole('button', { name: /Hole 2/ })).toHaveTextContent('SI 2 · 121 yards');
   });
 
   it('finishes only from the review screen', async () => {

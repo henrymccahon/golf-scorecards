@@ -4,11 +4,12 @@ import type { Hole } from '../domain/types';
 interface HoleScoreEntryProps {
   hole: Hole;
   displayStrokes: number;
+  scoreContext: string;
   onIncrement(): void;
   onDecrement(): void;
 }
 
-export function HoleScoreEntry({ hole, displayStrokes, onIncrement, onDecrement }: HoleScoreEntryProps) {
+export function HoleScoreEntry({ hole, displayStrokes, scoreContext, onIncrement, onDecrement }: HoleScoreEntryProps) {
   return (
     <section className="hole-score-entry" aria-labelledby={`hole-${hole.number}-title`}>
       <div className="hole-title-row">
@@ -32,9 +33,12 @@ export function HoleScoreEntry({ hole, displayStrokes, onIncrement, onDecrement 
         >
           <Minus aria-hidden="true" size={28} />
         </button>
-        <output className="score-value" aria-label={`Hole ${hole.number} displayed score`}>
-          {displayStrokes}
-        </output>
+        <div className="score-value-group">
+          <output className="score-value" aria-label={`Hole ${hole.number} displayed score`}>
+            {displayStrokes}
+          </output>
+          <p className="score-context">{scoreContext}</p>
+        </div>
         <button
           className="score-stepper-button"
           type="button"

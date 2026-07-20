@@ -50,6 +50,7 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
   const [activeRoundId, setActiveRoundId] = useState<string>();
   const [activeRoundInitialTarget, setActiveRoundInitialTarget] = useState<RoundResumeTarget>();
   const [summaryRoundId, setSummaryRoundId] = useState<string>();
+  const [abandonCandidateRoundId, setAbandonCandidateRoundId] = useState<string>();
   const courses = [...seedCourses, ...savedCourses];
   const selectedCourse = courses.find((course) => course.id === selectedCourseId);
   const editingCourse = savedCourses.find((course) => course.id === editingCourseId && course.source === 'custom');
@@ -139,18 +140,21 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
 
   function selectCourse(courseId: string): void {
     invalidateProviderLoad();
+    setAbandonCandidateRoundId(undefined);
     setSelectedCourseId(courseId);
     setEditingCourseId(undefined);
   }
 
   function editCourse(courseId: string): void {
     invalidateProviderLoad();
+    setAbandonCandidateRoundId(undefined);
     setEditingCourseId(courseId);
     setSelectedCourseId(undefined);
   }
 
   function createCourse(): void {
     invalidateProviderLoad();
+    setAbandonCandidateRoundId(undefined);
     setEditingCourseId('new');
     setSelectedCourseId(undefined);
   }
@@ -167,6 +171,7 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
     setEditingCourseId(undefined);
     setActiveRoundId(undefined);
     setActiveRoundInitialTarget(undefined);
+    setAbandonCandidateRoundId(undefined);
     setSummaryRoundId(undefined);
   }
 
@@ -245,7 +250,42 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
     setSummaryRoundId(undefined);
     setActiveRoundInitialTarget(round ? getRoundResumeTarget(round) : undefined);
     setActiveRoundId(roundId);
+    setAbandonCandidateRoundId(undefined);
     setActiveTab('play');
+  }
+
+  function requestAbandonRound(roundId: string): void {
+    setAbandonCandidateRoundId(roundId);
+  }
+
+  function cancelAbandonRound(): void {
+    setAbandonCandidateRoundId(undefined);
+  }
+
+  function confirmAbandonRound(roundId: string): void {
+    if (recoveryRequired) return;
+
+    const nextRounds = roundsRef.current.filter((round) =>
+      round.id !== roundId || round.status !== 'in_progress'
+    );
+
+    if (nextRounds.length === roundsRef.current.length) {
+      setAbandonCandidateRoundId(undefined);
+      return;
+    }
+
+    replaceRounds(nextRounds);
+    persist(savedCoursesRef.current, nextRounds);
+    setAbandonCandidateRoundId(undefined);
+
+    if (activeRoundId === roundId) {
+      setActiveRoundId(undefined);
+      setActiveRoundInitialTarget(undefined);
+    }
+
+    if (summaryRoundId === roundId) {
+      setSummaryRoundId(undefined);
+    }
   }
 
   function openCompletedRound(roundId: string): void {
@@ -382,12 +422,16 @@ export function App({ courseProvider = staticCourseProvider }: AppProps) {
           courses={courses}
           query={query}
           inProgressRounds={inProgressRounds}
+          abandonCandidateRoundId={abandonCandidateRoundId}
           providerResults={providerResults}
           providerStatus={providerStatus}
           providerError={providerError}
           onQueryChange={changeQuery}
           onSelectCourse={selectCourse}
           onResumeRound={resumeRound}
+          onRequestAbandonRound={requestAbandonRound}
+          onCancelAbandonRound={cancelAbandonRound}
+          onConfirmAbandonRound={confirmAbandonRound}
           onSelectProviderResult={selectProviderResult}
           onCreateCourse={createCourse}
         />

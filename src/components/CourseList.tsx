@@ -3,6 +3,7 @@ import { getRoundResumeTarget, getRoundTotals } from '../domain/rounds';
 import type { Course, Round } from '../domain/types';
 import { createProviderIdentityKey } from '../providers/providerCourseMapper';
 import type { CourseSearchResult } from '../providers/types';
+import { AbandonRoundConfirmation } from './AbandonRoundConfirmation';
 
 export type ProviderSearchStatus = 'idle' | 'searching' | 'loading' | 'error';
 
@@ -10,12 +11,16 @@ interface CourseListProps {
   courses: Course[];
   query: string;
   inProgressRounds: Round[];
+  abandonCandidateRoundId?: string;
   providerResults?: CourseSearchResult[];
   providerStatus?: ProviderSearchStatus;
   providerError?: string;
   onQueryChange(query: string): void;
   onSelectCourse(courseId: string): void;
   onResumeRound(roundId: string): void;
+  onRequestAbandonRound(roundId: string): void;
+  onCancelAbandonRound(): void;
+  onConfirmAbandonRound(roundId: string): void;
   onSelectProviderResult?(result: CourseSearchResult): void;
   onCreateCourse?(): void;
 }
@@ -24,12 +29,16 @@ export function CourseList({
   courses,
   query,
   inProgressRounds,
+  abandonCandidateRoundId,
   providerResults = [],
   providerStatus = 'idle',
   providerError,
   onQueryChange,
   onSelectCourse,
   onResumeRound,
+  onRequestAbandonRound,
+  onCancelAbandonRound,
+  onConfirmAbandonRound,
   onSelectProviderResult,
   onCreateCourse
 }: CourseListProps) {
@@ -48,18 +57,36 @@ export function CourseList({
         const scoreLabel = formatScoreToPar(totals.scoreToPar);
 
         return (
-          <button
-            key={round.id}
-            className="resume-banner"
-            aria-label={`Resume ${round.courseSnapshot.name}, ${progress}, ${totalLabel}, ${scoreLabel}, ${nextAction}`}
-            onClick={() => onResumeRound(round.id)}
-          >
-            <span>
-              <strong>{round.courseSnapshot.name}</strong>
-              <small>{progress} · {totalLabel} · {scoreLabel}</small>
-            </span>
-            <span className="resume-action">{nextAction}</span>
-          </button>
+          <div key={round.id} className="resume-card">
+            <button
+              className="resume-banner"
+              aria-label={`Resume ${round.courseSnapshot.name}, ${progress}, ${totalLabel}, ${scoreLabel}, ${nextAction}`}
+              onClick={() => onResumeRound(round.id)}
+            >
+              <span>
+                <strong>{round.courseSnapshot.name}</strong>
+                <small>{progress} · {totalLabel} · {scoreLabel}</small>
+              </span>
+              <span className="resume-action">{nextAction}</span>
+            </button>
+            <div className="resume-card-actions">
+              <button
+                className="text-button abandon-action"
+                type="button"
+                aria-label={`Abandon ${round.courseSnapshot.name}`}
+                onClick={() => onRequestAbandonRound(round.id)}
+              >
+                Abandon
+              </button>
+            </div>
+            {abandonCandidateRoundId === round.id ? (
+              <AbandonRoundConfirmation
+                courseName={round.courseSnapshot.name}
+                onCancel={onCancelAbandonRound}
+                onConfirm={() => onConfirmAbandonRound(round.id)}
+              />
+            ) : null}
+          </div>
         );
       })}
       <label className="field">

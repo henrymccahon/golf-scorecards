@@ -93,7 +93,9 @@ p {
 .course-row,
 .hole-card,
 .hole-form,
-.resume-banner {
+.resume-banner,
+.blocked-round-panel,
+.abandon-confirmation {
   width: 100%;
   border: 1px solid #d8d0bf;
   border-radius: 8px;
@@ -114,6 +116,16 @@ p {
   gap: 8px;
 }
 
+.resume-card {
+  display: grid;
+  gap: 8px;
+}
+
+.resume-card-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .resume-banner > span:first-child {
   display: grid;
   gap: 4px;
@@ -126,6 +138,43 @@ p {
 .resume-action {
   color: #174a3c;
   font-weight: 800;
+}
+
+.round-action-panel,
+.blocked-round-panel,
+.abandon-confirmation {
+  display: grid;
+  gap: 10px;
+}
+
+.round-action-note {
+  color: #64736c;
+  font-weight: 700;
+  margin: 0;
+}
+
+.blocked-round-panel p,
+.abandon-confirmation p {
+  margin: 0;
+}
+
+.abandon-action {
+  color: #8a2f1c;
+}
+
+.confirmation-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.danger-button {
+  min-height: 44px;
+  border-radius: 8px;
+  border: 1px solid #8a2f1c;
+  padding: 10px 14px;
+  background: #8a2f1c;
+  color: #ffffff;
+  font-weight: 700;
 }
 
 .course-detail-hole-card {
@@ -388,6 +437,10 @@ p {
 @media (min-width: 480px) {
   .hole-navigator {
     grid-template-columns: repeat(9, minmax(0, 1fr));
+  }
+
+  .confirmation-actions {
+    grid-template-columns: 1fr 1fr;
   }
 }
 
